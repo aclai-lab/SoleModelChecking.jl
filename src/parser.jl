@@ -19,8 +19,8 @@ isnumber(s::AbstractString) = tryparse(Float64, s) isa Number
 isproposition(s::AbstractString) = s in alphabet
 
 # To retrieve info about an operator
-unary_operator = [:◇, :□]       # currently useless, please ignore
-binary_operator = [:¬, :∧, :∨]  # currently useless, please ignore
+unary_operator = [:◇, :□, :¬]       # currently useless, please ignore
+binary_operator = [:∧, :∨]  # currently useless, please ignore
 
 const precedence = Dict{String, Int}(
     "¬" => 30,
@@ -102,8 +102,8 @@ end
 
 # Testing
 
-formula = "( ¬ ( a ∧ b ) ) ∨ ( □ c ∧ ◇ d )"
-println( shunting_yard(formula) )
+# formula = "( ¬ ( a ∧ b ) ) ∨ ( □ c ∧ ◇ d )"
+# println( shunting_yard(formula) )
 
-formula = "( □ c ) ∧ ◇ ( ( □ p ) ∧ ( ◇ q ) )"
-println( shunting_yard(formula) )
+# formula = "( □ c ) ∧ ◇ ( ( □ p ) ∧ ( ◇ q ) )"
+# println( shunting_yard(formula) )
