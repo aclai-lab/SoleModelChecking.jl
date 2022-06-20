@@ -1,0 +1,3 @@
+[deps]
+Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+SoleModelChecking = "f545febf-9d2a-4ce1-b6cd-bbab897c9eb4"
