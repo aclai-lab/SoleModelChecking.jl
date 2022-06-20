@@ -19,8 +19,8 @@ isnumber(s::AbstractString) = tryparse(Float64, s) isa Number
 isproposition(s::AbstractString) = s in alphabet
 
 # To retrieve info about an operator
-unary_operator = [:◇, :□]       # currently useless, needed for AST generation
-binary_operator = [:¬, :∧, :∨]  # currently useless, needed for AST generation
+unary_operator = [:◇, :□]       # currently useless, please ignore
+binary_operator = [:¬, :∧, :∨]  # currently useless, please ignore
 
 const precedence = Dict{String, Int}(
     "¬" => 30,
@@ -31,13 +31,13 @@ const precedence = Dict{String, Int}(
     "(" => 0,
 )
 
-Base.isunaryoperator(s::Symbol) = s in unary_operator               # currently useless
-Base.isbinaryoperator(s::Symbol) = s in binary_operator             # currently useless
+Base.isunaryoperator(s::Symbol) = s in unary_operator               # currently useless, please ignore
+Base.isbinaryoperator(s::Symbol) = s in binary_operator             # currently useless, please ignore
 isvalid(s::Symbol) = s in unary_operator || s in binary_operator
 Base.operator_precedence(s::String) = return precedence[s]
 
 # shunting_yard(s::String)
-# Given a certain token, there are 3 possible scenarios
+# Given a certain token, there are 4 possible scenarios
 #
 # 1. It is a valid propositional letter
 #    -> push "p" in `postfix` ;
