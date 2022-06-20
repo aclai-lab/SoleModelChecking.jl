@@ -80,7 +80,8 @@ function shunting_yard(s::String)
                     push!(postfix, op)
                 else
                     # Why is the operator pushed back in the stack?
-                    # If failed, meaning `tok` must be above `op` in the operator stack
+                    # If clause failed, meaning that `tok` must be
+                    # exactly above `op` in the operator stack
                     push!(operators, op)
                     break
                 end
