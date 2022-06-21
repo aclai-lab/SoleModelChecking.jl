@@ -3,7 +3,6 @@
 include("parser.jl")
 include("solelogics.jl")
 
-# shunting_yard(s::String)
 # Given a certain token, there are 3 possible scenarios
 #
 # 1. It is a proposition, hence a leaf in the formula tree
