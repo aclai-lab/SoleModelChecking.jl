@@ -107,9 +107,25 @@ function make_tree(formula::Vector{Any})
 end
 
 prova = make_tree(formula)
+
+function postorder(node::Node)
+    if isdefined(node, :leftchild)
+        postorder(node.leftchild)
+    end
+    if isdefined(node, :rightchild)
+        postorder(node.rightchild)
+    end
+    println(node.formula)
+end
+
+println("Sottoformule da usare poi nella funzione check di cui parlavamo in laboratorio:")
+postorder(prova.tree)
+
+"""
 println("Root left child formula: ")
 @show prova.tree.leftchild.formula
 println("Root right child formula: ")
 @show prova.tree.rightchild.formula
 println("Complete built formula")
 @show prova.tree.formula
+"""
