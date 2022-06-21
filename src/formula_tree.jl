@@ -1,77 +1,31 @@
 # Use postfix notation to generate the formula tree
-# This code is UGLY and should be refactored.
-# Please don't read, this is just my stream of consciousness
-
-# SoleLogics - formulas.jl
-# Copy-pasted for testing purposes
-mutable struct Node{T}
-    token::T            # token (e.g., Proposition)
-    parent::Node        # parent node
-    leftchild::Node     # left child node
-    rightchild::Node    # right child node
-    formula::String     # human-readable string of the formula
-
-    Node{T}(token::T) where T = new{T}(token)
-end
-
-Node(token::T) where T = Node{T}(token)
-
-_token(ν::Node)      = ν.token
-_parent(ν::Node)     = ν.parent
-_leftchild(ν::Node)  = ν.leftchild
-_rightchild(ν::Node) = ν.rightchild
-_formula(ν::Node)    = ν.formula
-
-_parent!(ν::Node, ν′::Node)     = ν.parent = ν′
-_leftchild!(ν::Node, ν′::Node)  = ν.leftchild = ν′
-_rightchild!(ν::Node, ν′::Node) = ν.rightchild = ν′
-_formula!(ν::Node, ν′::Node)    = ν.formula = ν′
-
-function _size(ν::Node)
-    leftchild_size = isdefined(ν, :leftchild) ? _size(_leftchild(ν)) : 0
-    rightchild_size = isdefined(ν, :rightchild) ? _size(_rightchild(ν)) : 0
-    return 1 + leftchild_size + rightchild_size
-end
-
-function _isleaf(ν::Node)
-    return !(isdefined(ν, :leftchild) || isdefined(ν, :rightchild)) ? true : false
-end
-
-function _height(ν::Node)
-    return _isleaf(ν) ? 1 : 1 + max(
-        (isdefined(ν, :leftchild) ? _height(_leftchild(ν)) : 0),
-        (isdefined(ν, :rightchild) ? _height(_rightchild(ν)) : 0))
-end
-
-# TODO: add modaldepth() function (hint: use traits such as ismodal() function)
-
-# not working properly
-function _printnode(io::IO, ν::Node)
-    if isdefined(ν, :leftchild)
-        print(io, "$(_printnode(io, _leftchild(ν)))")
-    end
-    print(io, _token(ν))
-    if isdefined(ν, :rightchild)
-        print(io, "$(_printnode(io, _rightchild(ν)))")
-    end
-end
-
-show(io::IO, ν::Node) = _printnode(io, ν)
-
-struct Formula
-    tree::Node # syntax tree
-end
-# End of SoleLogics - formulas.jl
 
 include("parser.jl")
+include("solelogics.jl")
 
-formula = "( ¬ ( a ∧ b ) ) ∨ ( ( □ c ) ∧ ◇ d )"
-formula = shunting_yard(formula)
-println( "Starting formula tokens are: $formula" )
+# shunting_yard(s::String)
+# Given a certain token, there are 3 possible scenarios
+#
+# 1. It is a proposition, hence a leaf in the formula tree
+#    -> push a new Node(token) in the nodestack;
+#
+# 2. It is an unary operator
+#    -> make a new Node(token), then pop the top node from the nodestack
+#    -> link the new node and the one popped
+#    -> push the new node in the nodestack;
+#
+# 3. It is a binary operator
+#    -> similarly to 2. , but pop and link two nodes from the nodestack
+#    -> then push the new Node(token) in the nodestack;
+#
+# The only remaining node in `nodestack` is the root of the formula tree.
 
-function make_tree(formula::Vector{Any})
+function tree(formula::Vector{Any})
     nodestack = []
 
+    # TODO - Refactoring
+    # This code is not so elegant
+    # e.g newnode = Node(tok) is repeated in each branch
     for tok in formula
         if tok in alphabet
             newnode = Node(tok)
@@ -79,26 +33,31 @@ function make_tree(formula::Vector{Any})
             push!(nodestack, newnode)
 
         elseif Symbol(tok) in unary_operator
-            topnode = pop!(nodestack)
+            children = pop!(nodestack)
             newnode = Node(tok)
-            _parent!(topnode, newnode)
-            _leftchild!(newnode, topnode)
-            newnode.formula = tok * topnode.formula
+
+            _parent!(children, newnode)
+            _leftchild!(newnode, children)
+
+            newnode.formula = tok * children.formula
             push!(nodestack, newnode)
 
         elseif Symbol(tok) in binary_operator
-            rightnode = pop!(nodestack)
-            leftnode = pop!(nodestack)
+            rightchild = pop!(nodestack)
+            leftchild = pop!(nodestack)
             newnode = Node(tok)
-            _parent!(rightnode, newnode)
-            _parent!(leftnode, newnode)
-            _rightchild!(newnode, rightnode)
-            _leftchild!(newnode, leftnode)
-            newnode.formula = "( " * leftnode.formula * " " * tok * " " * rightnode.formula * " )"
+
+            _parent!(rightchild, newnode)
+            _parent!(leftchild, newnode)
+
+            _rightchild!(newnode, rightchild)
+            _leftchild!(newnode, leftchild)
+
+            newnode.formula = "( " * leftchild.formula * " " * tok * " " * rightchild.formula * " )"
             push!(nodestack, newnode)
 
         else
-            @assert 1==0 "Unknown token"
+            throw(error("Unknown token"))
         end
     end
 
@@ -106,7 +65,11 @@ function make_tree(formula::Vector{Any})
     return ans
 end
 
-prova = make_tree(formula)
+expression = "( ¬ ( a ∧ b ) ) ∨ ( ( □ c ) ∧ ◇ d )"
+expression = shunting_yard(expression)
+println( "Starting formula tokens are: $expression" )
+
+formula = tree(expression)
 
 function postorder(node::Node)
     if isdefined(node, :leftchild)
@@ -119,7 +82,7 @@ function postorder(node::Node)
 end
 
 println("Sottoformule da usare poi nella funzione check di cui parlavamo in laboratorio:")
-postorder(prova.tree)
+postorder(formula.tree)
 
 """
 println("Root left child formula: ")
