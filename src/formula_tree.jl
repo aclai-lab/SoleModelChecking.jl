@@ -22,18 +22,15 @@ include("solelogics.jl")
 function tree(formula::Vector{Any})
     nodestack = []
 
-    # TODO - Refactoring
-    # This code is not so elegant
-    # e.g newnode = Node(tok) is repeated in each branch
     for tok in formula
+        newnode = Node(tok)
+
         if tok in alphabet
-            newnode = Node(tok)
             newnode.formula = tok
             push!(nodestack, newnode)
 
         elseif Symbol(tok) in unary_operator
             children = pop!(nodestack)
-            newnode = Node(tok)
 
             _parent!(children, newnode)
             _leftchild!(newnode, children)
@@ -44,7 +41,6 @@ function tree(formula::Vector{Any})
         elseif Symbol(tok) in binary_operator
             rightchild = pop!(nodestack)
             leftchild = pop!(nodestack)
-            newnode = Node(tok)
 
             _parent!(rightchild, newnode)
             _parent!(leftchild, newnode)
@@ -64,7 +60,7 @@ function tree(formula::Vector{Any})
     return ans
 end
 
-expression = "( ¬ ( a ∧ b ) ) ∨ ( ( □ c ) ∧ ◇ d )"
+expression = "( ¬ ( a ∧ b ) ) ∨ ( □ c ∧ ◇ d )"
 expression = shunting_yard(expression)
 println( "Starting formula tokens are: $expression" )
 

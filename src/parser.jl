@@ -22,19 +22,19 @@ isproposition(s::AbstractString) = s in alphabet
 unary_operator = [:◇, :□, :¬]       # currently useless, please ignore
 binary_operator = [:∧, :∨]  # currently useless, please ignore
 
-const precedence = Dict{String, Int}(
-    "¬" => 30,
-    "◇" => 20,
-    "□" => 20,
-    "∧" => 10,
-    "∨" => 10,
-    "(" => 0,
+const precedence = Dict{Symbol, Int}(
+    :¬ => 30,
+    :◇ => 20,
+    :□ => 20,
+    :∧ => 10,
+    :∨ => 10,
+    Symbol("(") => 0
 )
 
 Base.isunaryoperator(s::Symbol) = s in unary_operator               # currently useless, please ignore
 Base.isbinaryoperator(s::Symbol) = s in binary_operator             # currently useless, please ignore
 isvalid(s::Symbol) = s in unary_operator || s in binary_operator
-Base.operator_precedence(s::String) = return precedence[s]
+Base.operator_precedence(s::Symbol) = return precedence[s]
 
 # shunting_yard(s::String)
 # Given a certain token, there are 4 possible scenarios
@@ -76,7 +76,7 @@ function shunting_yard(s::String)
             while !isempty(operators)
                 op = pop!(operators)
 
-                if Base.operator_precedence(tok) < Base.operator_precedence(tok)
+                if Base.operator_precedence(Symbol(op)) > Base.operator_precedence(Symbol(tok))
                     push!(postfix, op)
                 else
                     # Why is the operator pushed back in the stack?
@@ -86,8 +86,10 @@ function shunting_yard(s::String)
                     break
                 end
             end
+
             push!(operators, tok)
         end
+
     end
 
     # Last push and check for malformed input
