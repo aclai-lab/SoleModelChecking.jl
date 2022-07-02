@@ -9,6 +9,7 @@
 # Implement a system to parse this "(□p v □□◇p)" instead of "( □ p v □ □ ◇ p)"
 # Write tests
 
+using SoleLogics
 import Base
 
 # Just for prototyping

@@ -1,8 +1,5 @@
 # Use postfix notation to generate the formula tree
 
-include("parser.jl")
-include("solelogics.jl")
-
 # Given a certain token, there are 3 possible scenarios
 #
 # 1. It is a proposition, hence a leaf in the formula tree
@@ -33,7 +30,7 @@ function tree(formula::Vector{Any})
             children = pop!(nodestack)
 
             _parent!(children, newnode)
-            _leftchild!(newnode, children)
+            _rightchild!(newnode, children)
 
             newnode.formula = tok * children.formula
             push!(nodestack, newnode)
@@ -76,8 +73,20 @@ function postorder(node::Node)
     println(node.formula)
 end
 
+function inorder(node::Node)
+    print("(")
+    if isdefined(node, :leftchild)
+        inorder(node.leftchild)
+    end
+    print(node.token)
+    if isdefined(node, :rightchild)
+        inorder(node.rightchild)
+    end
+    print(")")
+end
+
 println("Sottoformule da usare poi nella funzione check di cui parlavamo in laboratorio:")
-postorder(formula.tree)
+inorder(formula.tree)
 
 """
 println("Root left child formula: ")
@@ -87,3 +96,5 @@ println("Root right child formula: ")
 println("Complete built formula")
 @show prova.tree.formula
 """
+
+#\lozenge e \square
