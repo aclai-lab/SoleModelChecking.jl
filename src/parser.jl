@@ -1,44 +1,34 @@
 # Shunting Yard implementation to parse modal logic expressions
-# This is a coarse standalone prototype
 
-# Other things to do:
-# Get operator and Node definition from SoleLogics
-# Establish the operators precedence
-# Take a look to "operators associativity" (?)
-# Implement AST ("Formula tree") generation in another file
-# Implement a system to parse this "(□p v □□◇p)" instead of "( □ p v □ □ ◇ p)"
-# Write tests
-
-using SoleLogics
-import Base
-
-# Just for prototyping
+# Dummy alphabet
 alphabet = string.(collect('a':'z'))
 
-# To establish the status of a token
+# To establish the role of an expression token
 isnumber(s::AbstractString) = tryparse(Float64, s) isa Number
 isproposition(s::AbstractString) = s in alphabet
 
 # To retrieve info about an operator
-unary_operator = [:◇, :□, :¬]       # currently useless, please ignore
-binary_operator = [:∧, :∨]  # currently useless, please ignore
+unary_operator  = [:◊, :□, :¬]
+binary_operator = [:∧, :∨]
+
+Base.isunaryoperator(s::Symbol)  = s in unary_operator
+Base.isbinaryoperator(s::Symbol) = s in binary_operator
+isvalid(s::Symbol) = s in unary_operator || s in binary_operator
 
 const precedence = Dict{Symbol, Int}(
     :¬ => 30,
-    :◇ => 20,
+    :◊ => 20,
     :□ => 20,
     :∧ => 10,
     :∨ => 10,
     Symbol("(") => 0
 )
 
-Base.isunaryoperator(s::Symbol) = s in unary_operator               # currently useless, please ignore
-Base.isbinaryoperator(s::Symbol) = s in binary_operator             # currently useless, please ignore
-isvalid(s::Symbol) = s in unary_operator || s in binary_operator
 Base.operator_precedence(s::Symbol) = return precedence[s]
 
 # shunting_yard(s::String)
 # Given a certain token, there are 4 possible scenarios
+# (which are regrouped in _shunting_yard function to keep code clean)
 #
 # 1. It is a valid propositional letter
 #    -> push "p" in `postfix` ;
@@ -58,39 +48,10 @@ Base.operator_precedence(s::Symbol) = return precedence[s]
 function shunting_yard(s::String)
     postfix = []
     operators = []
-    infix = split(s)
+    infix = split(s, "")
 
     for tok in infix
-        if isproposition(tok)
-            push!(postfix, tok)
-
-        elseif tok == "("
-            push!(operators, tok)
-
-        elseif tok == ")"
-            while !isempty(operators) && (op = pop!(operators)) != "("
-               push!(postfix, op)
-            end
-
-        # Token is an operator (see 4.)
-        else
-            while !isempty(operators)
-                op = pop!(operators)
-
-                if Base.operator_precedence(Symbol(op)) > Base.operator_precedence(Symbol(tok))
-                    push!(postfix, op)
-                else
-                    # Why is the operator pushed back in the stack?
-                    # If clause failed, meaning that `tok` must be
-                    # exactly above `op` in the operator stack
-                    push!(operators, op)
-                    break
-                end
-            end
-
-            push!(operators, tok)
-        end
-
+        _shunting_yard(postfix, operators, tok)
     end
 
     # Last push and check for malformed input
@@ -103,10 +64,30 @@ function shunting_yard(s::String)
     return postfix
 end
 
-# Testing
-
-# formula = "( ¬ ( a ∧ b ) ) ∨ ( □ c ∧ ◇ d )"
-# println( shunting_yard(formula) )
-
-# formula = "( □ c ) ∧ ◇ ( ( □ p ) ∧ ( ◇ q ) )"
-# println( shunting_yard(formula) )
+function _shunting_yard(postfix, operators, tok)
+    # 1
+    if isproposition(tok)
+        push!(postfix, tok)
+    # 2
+    elseif tok == "("
+        push!(operators, tok)
+    # 3
+    elseif tok == ")"
+        while !isempty(operators) && (op = pop!(operators)) != "("
+           push!(postfix, op)
+        end
+    # 4
+    else
+        while !isempty(operators)
+            op = pop!(operators)
+            if Base.operator_precedence(Symbol(op)) > Base.operator_precedence(Symbol(tok))
+                push!(postfix, op)
+            else
+                # pop is reverted, `tok` is about to be pushed in the right spot
+                push!(operators, op)
+                break
+            end
+        end
+        push!(operators, tok)
+    end
+end
