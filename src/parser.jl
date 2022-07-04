@@ -48,7 +48,8 @@ Base.operator_precedence(s::Symbol) = return precedence[s]
 function shunting_yard(s::String)
     postfix = []
     operators = []
-    infix = split(s, "")
+    # Remove whitespaces from s, then retrieve each character as a token
+    infix = split(filter(x -> !isspace(x), s), "")
 
     for tok in infix
         _shunting_yard(postfix, operators, tok)
