@@ -1,8 +1,6 @@
 module SoleModelChecking
 
-using Reexport
-
-@reexport using SoleLogics
+using SoleLogics
 
 include("parser.jl")
 include("formula_tree.jl")
