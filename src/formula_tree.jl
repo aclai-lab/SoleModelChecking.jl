@@ -17,7 +17,7 @@
 #
 # The only remaining node in `nodestack` is the root of the formula tree.
 
-function tree(expression::Vector{Any})
+function tree(expression::Vector{String})
     nodestack = []
 
     for tok in expression
