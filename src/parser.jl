@@ -11,8 +11,8 @@ isproposition(s::AbstractString) = s in alphabet
 unary_operator  = [:◊, :□, :¬]
 binary_operator = [:∧, :∨]
 
-Base.isunaryoperator(s::Symbol)  = s in unary_operator
-Base.isbinaryoperator(s::Symbol) = s in binary_operator
+isunaryoperator(s::Symbol)  = s in unary_operator
+isbinaryoperator(s::Symbol) = s in binary_operator
 isvalid(s::Symbol) = s in unary_operator || s in binary_operator
 
 const precedence = Dict{Symbol, Int}(
@@ -24,7 +24,7 @@ const precedence = Dict{Symbol, Int}(
     Symbol("(") => 0
 )
 
-Base.operator_precedence(s::Symbol) = return precedence[s]
+operator_precedence(s::Symbol) = return precedence[s]
 
 # shunting_yard(s::String)
 # Given a certain token, there are 4 possible scenarios
@@ -81,7 +81,7 @@ function _shunting_yard(postfix, operators, tok)
     else
         while !isempty(operators)
             op = pop!(operators)
-            if Base.operator_precedence(Symbol(op)) > Base.operator_precedence(Symbol(tok))
+            if operator_precedence(Symbol(op)) > operator_precedence(Symbol(tok))
                 push!(postfix, op)
             else
                 # pop is reverted, `tok` is about to be pushed in the right spot
@@ -92,5 +92,3 @@ function _shunting_yard(postfix, operators, tok)
         push!(operators, tok)
     end
 end
-
-println(shunting_yard("avb"))
