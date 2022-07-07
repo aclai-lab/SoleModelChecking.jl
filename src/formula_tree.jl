@@ -91,19 +91,3 @@ function inorder(node::Node)
     end
     print(")")
 end
-
-# Test
-
-expression = "(¬(a∧b))∨(□c∧◊d)"
-println("Starting formula is $expression")
-expression = shunting_yard(expression)
-println("Starting formula tokens are: $expression" )
-
-print("Inorder visit, retrieveing a token foreach node: ")
-formula = tree(expression)
-inorder(formula.tree)
-println();
-
-subf_array = String[]
-φ = subformulas(formula.tree, subf_array)
-println("Subformulas array: $φ")
