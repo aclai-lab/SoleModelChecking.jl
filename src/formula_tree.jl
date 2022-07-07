@@ -53,7 +53,7 @@ function _tree(tok, nodestack)
         _rightchild!(newnode, rightchild)
         _leftchild!(newnode, leftchild)
 
-        newnode.formula = "( " * leftchild.formula * " " * tok * " " * rightchild.formula * " )"
+        newnode.formula = "(" * leftchild.formula * tok * rightchild.formula * ")"
         push!(nodestack, newnode)
 
     else
@@ -61,16 +61,21 @@ function _tree(tok, nodestack)
     end
 end
 
-function postorder(node::Node)
+function subformulas(node::Node, phi::Vector{String})
+    _subformulas(node, phi)
+    sort!(phi, by=length)
+end
+
+function _subformulas(node::Node, phi::Vector{String})
     if isdefined(node, :leftchild)
-        postorder(node.leftchild)
+        subformulas(node.leftchild, phi)
     end
 
     if isdefined(node, :rightchild)
-        postorder(node.rightchild)
+        subformulas(node.rightchild, phi)
     end
 
-    println(node.formula)
+    push!(phi, node.formula)
 end
 
 function inorder(node::Node)
@@ -94,17 +99,11 @@ println("Starting formula is $expression")
 expression = shunting_yard(expression)
 println("Starting formula tokens are: $expression" )
 
+print("Inorder visit, retrieveing a token foreach node: ")
 formula = tree(expression)
-
-println("Sottoformule da usare poi nella funzione check di cui parlavamo in laboratorio:")
 inorder(formula.tree)
-println("")
+println();
 
-"""
-println("Root left child formula: ")
-@show prova.tree.leftchild.formula
-println("Root right child formula: ")
-@show prova.tree.rightchild.formula
-println("Complete built formula")
-@show prova.tree.formula
-"""
+subf_array = String[]
+φ = subformulas(formula.tree, subf_array)
+println("Subformulas array: $φ")
