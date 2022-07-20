@@ -8,6 +8,7 @@ isnumber(s::AbstractString) = tryparse(Float64, s) isa Number
 isproposition(s::AbstractString) = s in alphabet
 
 # To retrieve info about an operator
+# \vee:∨ , \wedge:∧ , \lozenge:◊ , \square:□ , \neg:¬
 unary_operator  = [:◊, :□, :¬]
 binary_operator = [:∧, :∨]
 
@@ -26,24 +27,28 @@ const precedence = Dict{Symbol, Int}(
 
 operator_precedence(s::Symbol) = return precedence[s]
 
-# shunting_yard(s::String)
-# Given a certain token, there are 4 possible scenarios
-# (which are regrouped in _shunting_yard function to keep code clean)
-#
-# 1. It is a valid propositional letter
-#    -> push "p" in `postfix` ;
-#
-# 2. It is an opening bracket
-#    -> push "(" in `operators` ;
-#
-# 3. It is a closing bracket
-#    -> pop op ∈ `operators` and push it in `postfix` until
-#       the corresponding opening bracket is found ;
-#
-# 4. It is an operator
-#    -> pop op ∈ `operators` and push it in `postfix` if it has higher precedence
-#       than the current token.
-#       After that, push the current token in `operators` ;
+#=
+shunting_yard(s::String)
+Given a certain token, there are 4 possible scenarios
+(which are regrouped in _shunting_yard function to keep code clean)
+
+1. It is a valid propositional letter
+    -> push "p" in `postfix` ;
+
+2. It is an opening bracket
+-> push "(" in `operators` ;
+
+3. It is a closing bracket
+    -> pop op ∈ `operators` and push it in `postfix` until
+    the corresponding opening bracket is found ;
+
+4. It is an operator
+    -> pop op ∈ `operators` and push it in `postfix` if it has higher precedence
+    than the current token.
+    After that, push the current token in `operators` ;
+
+TODO: add "<" and "[" case for existential and universal HSRELATIONS
+=#
 
 function shunting_yard(s::String)
     postfix = String[]
