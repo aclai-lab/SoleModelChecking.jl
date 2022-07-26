@@ -3,29 +3,8 @@
 # Dummy alphabet
 alphabet = string.(collect('a':'z'))
 
-# To establish the role of an expression token
-isnumber(s::AbstractString) = tryparse(Float64, s) isa Number
 isproposition(s::AbstractString) = s in alphabet
-
-# To retrieve info about an operator
-# \vee:∨ , \wedge:∧ , \lozenge:◊ , \square:□ , \neg:¬
-unary_operator  = [:◊, :□, :¬]
-binary_operator = [:∧, :∨]
-
-isunaryoperator(s::Symbol)  = s in unary_operator
-isbinaryoperator(s::Symbol) = s in binary_operator
-isvalid(s::Symbol) = s in unary_operator || s in binary_operator
-
-const precedence = Dict{Symbol, Int}(
-    :¬ => 30,
-    :◊ => 20,
-    :□ => 20,
-    :∧ => 10,
-    :∨ => 10,
-    Symbol("(") => 0
-)
-
-operator_precedence(s::Symbol) = return precedence[s]
+isvalid(s::Symbol) = haskey(operator, s)
 
 #=
 shunting_yard(s::String)
@@ -51,10 +30,9 @@ TODO: add "<" and "[" case for existential and universal HSRELATIONS
 =#
 
 function shunting_yard(s::String)
-    postfix = String[]
+    postfix = Union{String, AbstractOperator}[]
     operators = []
-    # Remove whitespaces from s, then retrieve each character as a token
-    infix = split(filter(x -> !isspace(x), s), "")
+    infix = string.(split(filter(x -> !isspace(x), s), ""))
 
     for tok in infix
         _shunting_yard(postfix, operators, tok)
@@ -64,7 +42,7 @@ function shunting_yard(s::String)
     while !isempty(operators)
         op = pop!(operators)
         @assert op != "(" "Mismatching brackets"
-        push!(postfix, op)
+        push!(postfix, operator[Symbol(op)])
     end
 
     return postfix
@@ -80,14 +58,14 @@ function _shunting_yard(postfix, operators, tok)
     # 3
     elseif tok == ")"
         while !isempty(operators) && (op = pop!(operators)) != "("
-           push!(postfix, op)
+            push!(postfix, operator[Symbol(op)])
         end
     # 4
     else
         while !isempty(operators)
             op = pop!(operators)
-            if operator_precedence(Symbol(op)) > operator_precedence(Symbol(tok))
-                push!(postfix, op)
+            if op != "(" && operators_precedence[operator[Symbol(op)]] > operators_precedence[operator[Symbol(tok)]]
+                push!(postfix, operator[Symbol(op)])
             else
                 # pop is reverted, `tok` is about to be pushed in the right spot
                 push!(operators, op)

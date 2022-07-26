@@ -1,62 +1,26 @@
 using SoleModelChecking
 using Test
 
-@testset "SoleModelChecking.jl" begin
+@testset "Shunting yard and formula tree" begin
+    exp1 = "(¬(a∧b)∨(□c∧◊d))"
+    sh1 = shunting_yard(exp1)
+    f1  = tree(sh1)
+    @test sh1 == ["a", "b", CONJUNCTION, NEGATION, "c", BOX, "d", DIAMOND, CONJUNCTION, DISJUNCTION]
+    @test inorder(f1.tree) == "((¬((a)∧(b)))∨((□(c))∧(◊(d))))"
 
-    #=
-        the idea bheind the testing is the following:
-            - testing if the expression without parenthesis is equal length of the one
-                obtained by shouting_yard
-            - testing if the symbols obtained by shouting_yard are in the expression
-            - testing if the combination of the symbols are int the expression
-    =#
+    exp2 = "(a∧b∧c∧d∧e)"
+    sh2 = shunting_yard(exp2)
+    f2 = tree(sh2)
+    @test sh2 == ["a", "b", "c", "d", "e", fill(CONJUNCTION, (1,4))...]
+    @test inorder(f2.tree) == "((a)∧((b)∧((c)∧((d)∧(e)))))"
 
-    @testset "Fisrt expression check" begin
-        expression = "(¬(a∧b)∨(□c∧◊d))"
+    exp3 = "(a∧b)∧(c∧d)∧(◊e)"
+    sh3 = shunting_yard(exp3)
+    f3 = tree(sh3)
+    @test sh3 == ["a", "b", CONJUNCTION, "c", "d", CONJUNCTION, "e", DIAMOND, CONJUNCTION, CONJUNCTION]
+    @test inorder(f3.tree) == "(((a)∧(b))∧(((c)∧(d))∧(◊(e))))"
+end
 
-        #testing length of the formulas without parenthesis
-        expressionNoPar = replace(expression,['(',')'] => "");
-        resultExpr = shunting_yard(expression)
-        @test length(resultExpr) == length(expressionNoPar)
-
-        #testing if all the symbol obtained by shouting_yard are in the expression
-        for symbol in resultExpr
-            @test occursin(symbol,expression)
-        end
-
-        formula = tree(resultExpr)
-
-        #testing if all the subformulas are contained in the expression
-        subf_array = String[]
-        φ = subformulas(formula.tree, subf_array)
-        for subformula in φ
-            @test occursin(subformula,expression)
-        end
-    end
-
-    @testset "Second expression check" begin
-        expression = "((((((((((((a))))))))))))"
-
-        #testing length of the formulas without parenthesis
-        expressionNoPar = replace(expression,['(',')'] => "");
-        resultExpr = shunting_yard(expression)
-        @test length(resultExpr) == length(expressionNoPar)
-
-        #testing if all the symbol obtained by shouting_yard are in the expression
-        for symbol in resultExpr
-            @test occursin(symbol,expression)
-        end
-
-        formula = tree(resultExpr)
-
-        #testing if all the subformulas are contained in the expression
-        subf_array = String[]
-        φ = subformulas(formula.tree, subf_array)
-        for subformula in φ
-            @test occursin(subformula,expression)
-        end
-    end
-
-    #testing some operators here
+@testset "Checker" begin
 
 end

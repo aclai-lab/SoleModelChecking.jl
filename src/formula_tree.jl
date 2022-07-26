@@ -19,8 +19,8 @@ Given a certain token, there are 3 possible scenarios
 The only remaining node in `nodestack` is the root of the formula tree.
 =#
 
-function tree(expression::Vector{String})
-    nodestack = []
+function tree(expression::Vector{Union{String, AbstractOperator}})
+    nodestack = Node[]
 
     for tok in expression
         _tree(tok, nodestack)
@@ -33,21 +33,21 @@ function _tree(tok, nodestack)
     newnode = Node(tok)
 
     if tok in alphabet
-        newnode.formula = tok
+        newnode.formula = string(tok)
         newnode.height = 1
         push!(nodestack, newnode)
 
-    elseif Symbol(tok) in unary_operator
+    elseif tok in unary_operators.ops
         children = pop!(nodestack)
 
         parent!(children, newnode)
         rightchild!(newnode, children)
 
-        newnode.formula = tok * children.formula
+        newnode.formula = string(tok, children.formula)
         newnode.height = 1 + children.height
         push!(nodestack, newnode)
 
-    elseif Symbol(tok) in binary_operator
+    elseif tok in binary_operators.ops
         rightchild = pop!(nodestack)
         leftchild = pop!(nodestack)
 
@@ -57,7 +57,7 @@ function _tree(tok, nodestack)
         rightchild!(newnode, rightchild)
         leftchild!(newnode, leftchild)
 
-        newnode.formula = "(" * leftchild.formula * tok * rightchild.formula * ")"
+        newnode.formula = string("(", leftchild.formula, tok, rightchild.formula, ")")
         newnode.height = 1 + max(leftchild.height, rightchild.height)
         push!(nodestack, newnode)
 
@@ -86,15 +86,17 @@ function _subformulas(node::Node, phi::Vector{Node})
 end
 
 function inorder(node::Node)
-    print("(")
+    str = "("
     if isdefined(node, :leftchild)
-        inorder(node.leftchild)
+        str = string(str, inorder(node.leftchild))
     end
 
-    print(node.token)
+    str = string(str, node.token)
 
     if isdefined(node, :rightchild)
-        inorder(node.rightchild)
+        str = string(str, inorder(node.rightchild))
     end
-    print(")")
+    str = string(str, ")")
+
+    return str
 end
