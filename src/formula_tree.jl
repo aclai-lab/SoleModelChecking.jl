@@ -26,6 +26,7 @@ function tree(expression::Vector{Union{String, AbstractOperator}})
         _tree(tok, nodestack)
     end
 
+    SoleLogics.size(nodestack[1])
     return Formula(nodestack[1])
 end
 
@@ -34,7 +35,6 @@ function _tree(tok, nodestack)
 
     if tok in alphabet
         newnode.formula = string(tok)
-        newnode.height = 1
         push!(nodestack, newnode)
 
     elseif tok in unary_operators.ops
@@ -44,7 +44,6 @@ function _tree(tok, nodestack)
         rightchild!(newnode, children)
 
         newnode.formula = string(tok, children.formula)
-        newnode.height = 1 + children.height
         push!(nodestack, newnode)
 
     elseif tok in binary_operators.ops
@@ -58,7 +57,6 @@ function _tree(tok, nodestack)
         leftchild!(newnode, leftchild)
 
         newnode.formula = string("(", leftchild.formula, tok, rightchild.formula, ")")
-        newnode.height = 1 + max(leftchild.height, rightchild.height)
         push!(nodestack, newnode)
 
     else
@@ -69,7 +67,7 @@ end
 function subformulas(node::Node)
     phi = Node[]
     _subformulas(node, phi)
-    sort!(phi, by = n -> n.height)
+    sort!(phi, by = n -> n.size)
     return phi
 end
 
@@ -83,20 +81,4 @@ function _subformulas(node::Node, phi::Vector{Node})
     end
 
     push!(phi, node)
-end
-
-function inorder(node::Node)
-    str = "("
-    if isdefined(node, :leftchild)
-        str = string(str, inorder(node.leftchild))
-    end
-
-    str = string(str, node.token)
-
-    if isdefined(node, :rightchild)
-        str = string(str, inorder(node.rightchild))
-    end
-    str = string(str, ")")
-
-    return str
 end

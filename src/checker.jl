@@ -19,6 +19,7 @@ struct KripkeModel
     end
 end
 
+# TODO: this is incomplete. Manage to add hashing and memoization
 function check(km::KripkeModel, formula::Formula)
     L = Dict{Pair{String, AbstractWorld}, Bool}()
 
