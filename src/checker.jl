@@ -1,3 +1,11 @@
+#=
+TODO:
+    * Think about types involved (KripkeFrame and other structures)
+    * Hashing and memoization
+    * Think about other check implementative details
+    (...ψ.token could represent some other binary_operator, apart from &&)
+=#
+
 struct KripkeFrame
     worlds::Vector{AbstractWorld}
     relations::Dict{Pair{AbstractWorld, AbstractWorld}, Bool}
@@ -19,7 +27,6 @@ struct KripkeModel
     end
 end
 
-# TODO: this is incomplete. Manage to add hashing and memoization
 function check(km::KripkeModel, formula::Formula)
     L = Dict{Pair{String, AbstractWorld}, Bool}()
 
@@ -31,16 +38,17 @@ function check(km::KripkeModel, formula::Formula)
         end
 
         if Symbol(ψ.token) ∈ binary_operator
-            # Todo - Consider a generic binary operator
             for w ∈ km.frame.worlds
+                # memoization here
                 L[Pair{ψ, w}] = (L[Pair{ψ.leftchild, w}] && L[Pair{ψ.rightchild, w}]) ? true : false
+                # ψ.token could represent some other binary_operator, apart from &&
             end
         end
 
         if Symbol(ψ.token) ∈ unary_operator
             for w ∈ km.frame.worlds
                 for v ∈ km.frame.worlds
-                    # Todo
+                    # incomplete
                 end
             end
         end

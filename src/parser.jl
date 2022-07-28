@@ -4,11 +4,6 @@ using DataStructures
 alphabet = string.(collect('a':'z'))
 isproposition(s::AbstractString) = s in alphabet
 
-#################################
-#      Utilities to manage      #
-#     operators and parsing     #
-#################################
-
 # Could be an ImmutableDict instead
 const operators_precedence = Dict{Union{AbstractOperator,Symbol}, Int}(
     NEGATION => 30,
@@ -20,7 +15,7 @@ const operators_precedence = Dict{Union{AbstractOperator,Symbol}, Int}(
 )
 
 # Given a symbol check if it's associated with an operator.
-# TODO: add flexibility by allowing the user to define a custom set of operators
+# TODO: add more flexibility by allowing the user to define a custom set of operators.
 const operators = Dict{Symbol,AbstractOperator}()
 for op in [unary_operators.ops..., binary_operators.ops...]
     pair = (reltype(op), op)
@@ -33,9 +28,9 @@ Shunting yard algorithm explanation.
 Goal:
 translate an infix expression to postfix notation. (also called Reverse Polish Notation)
 e.g. "□c∧◊d" becomes "c□d◊∧"
-This is useful to generate a syntax/formula tree later.
+This preprocessing is useful to simplify formula (syntax) trees generations.
 
-Data structures:
+Data structures involved:
 * `postfix`: vector of tokens (String or AbstractOperator) in RPN; this is returned
 * `ops_stack`: stack of tokens (String, eventually converted to AbstractOperator when pushed to `postfix`)
 
@@ -44,19 +39,22 @@ given a certain token `tok`, 1 of 4 possible scenarios may occur:
 (regrouped in _shunting_yard function to keep code clean)
 
 1. `tok` is a valid propositional letter
-    -> push "p" in `postfix` ;
+    -> push "p" in `postfix`
 
 2. `tok` is an opening bracket
--> push "(" in `operators` ;
+    -> push "(" in `operators`
 
 3. `tok` is a closing bracket
-    -> pop op ∈ `operators` and push it in `postfix` until
-    the corresponding opening bracket is found ;
+    -> pop from `ops_stack` and interpret the obtained string as an AbstractOperator,
+    then push it into `postfix`.
+    Repeat the process until an opening bracket is found.
 
-4. `tok` is an operator
-    -> pop op ∈ `operators` and push it in `postfix` if it has higher precedence
-    than the current token.
-    After that, push the current token in `operators` ;
+4. `tok` has to be an operator
+    -> pop `op` from `ops_stack` and interpret the obtained string as an AbstractOperator
+    (named `op_op`, similarly obtain `tok_op`).
+    Continue pushing `op_op` into `postfix` if it has higher precedence than `tok_op`,
+    otherwise undo this cycle (`op` string is pushed back to `ops_stack`) and push
+    `tok_op` in `postfix`.
 =#
 
 """
@@ -72,7 +70,7 @@ function shunting_yard(expression::String)
         _shunting_yard(postfix, ops_stack, tok)
     end
 
-    # Last push and check for malformed input
+    # Survivor tokens are pushed to postfix
     while !isempty(ops_stack)
         op = pop!(ops_stack)
         @assert op != "(" "Mismatching brackets"
@@ -91,18 +89,25 @@ function _shunting_yard(postfix, ops_stack, tok)
         push!(ops_stack, tok)
     # 3
     elseif tok == ")"
-        while !isempty(ops_stack) && (op = pop!(ops_stack)) != "("
-            push!(postfix, operators[Symbol(op)])
+        while !isempty(ops_stack) && (op_str = pop!(ops_stack)) != "("
+            push!(postfix, operators[Symbol(op_str)])
         end
     # 4
     else
         while !isempty(ops_stack)
-            op = pop!(ops_stack)
-            if op != "(" && operators_precedence[operators[Symbol(op)]] > operators_precedence[operators[Symbol(tok)]]
-                push!(postfix, operators[Symbol(op)])
+            if first(ops_stack) == "("
+                break
+            end
+
+            op_str = pop!(ops_stack)            # "◊"
+            op_op = operators[Symbol(op_str)]   # operators[:◊] -> SoleLogics.DIAMOND
+            tok_op = operators[Symbol(tok)]
+
+            if operators_precedence[op_op] > operators_precedence[tok_op]
+                push!(postfix, op_op)
             else
-                # pop is reverted, `tok` is about to be pushed in the right spot
-                push!(ops_stack, op)
+                # Last pop is reverted since `tok` has to be pushed in `ops_stack` now.
+                push!(ops_stack, op_str)
                 break
             end
         end
