@@ -1,5 +1,6 @@
 module SoleModelChecking
 
+using DataStructures
 using Reexport
 
 export shunting_yard

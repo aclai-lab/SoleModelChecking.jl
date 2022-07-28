@@ -20,14 +20,14 @@ At the end, the only remaining node in `nodestack` is the root of the formula (s
 =#
 
 function tree(expression::Vector{Union{String, AbstractOperator}})
-    nodestack = Node[]
+    nodestack = Stack{Node}()
 
     for tok in expression
         _tree(tok, nodestack)
     end
 
-    SoleLogics.size(nodestack[1])
-    return Formula(nodestack[1])
+    SoleLogics.size(first(nodestack))
+    return Formula(first(nodestack))
 end
 
 function _tree(tok, nodestack)

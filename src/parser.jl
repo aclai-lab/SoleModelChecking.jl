@@ -1,5 +1,3 @@
-using DataStructures
-
 # Temporary dummy alphabet
 alphabet = string.(collect('a':'z'))
 isproposition(s::AbstractString) = s in alphabet
