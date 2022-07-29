@@ -3,16 +3,18 @@ TODO:
     * Think about types involved (KripkeFrame and other structures)
     * Hashing and memoization
     * Think about other check implementative details
-    (...ψ.token could represent some other binary_operator, apart from &&)
+    (...psi.token could represent some other binary_operator, apart from &&)
+    * Find a way to memoize "a DISJUNCTION b" with the same hash as "b  DISJUNCTION a"
+    * Check performances (Dict vs SwissDict)
 =#
 
 struct KripkeFrame
     worlds::Vector{AbstractWorld}
-    relations::Dict{Pair{AbstractWorld, AbstractWorld}, Bool}
+    relations::Dict{Tuple{AbstractWorld, AbstractWorld}, Bool}
 
     function KripkeFrame()
         worlds = AbstractWorld[]
-        relations = Dict{Pair{AbstractWorld, AbstractWorld}, Bool}()
+        relations = Dict{Tuple{AbstractWorld, AbstractWorld}, Bool}()
         return new(worlds, relations)
     end
 end
@@ -27,32 +29,63 @@ struct KripkeModel
     end
 end
 
+function _check_alphabet(
+    L::Dict{Tuple{Int, AbstractWorld}, Bool},
+    km::KripkeModel,
+    psi::Node
+)
+    for w in km.frame.worlds
+        token_id = hash(psi.token)
+        if !haskey(L, (token_id, w))
+            L[(token_id, w)] = (psi ∈ km.evaluations[w]) ? true : false
+        end
+    end
+end
+
+function _check_unary(
+    L::Dict{Tuple{Int, AbstractWorld}, Bool},
+    km::KripkeModel,
+    psi::Node
+)
+    @assert psi.token in values(operators) "Error - $(psi.token) is an invalid token"
+
+    #=
+    for w in km.frame.worlds
+        for v in km.frame.worlds
+            # incomplete
+        end
+    end
+    =#
+end
+
+function _check_binary(
+    L::Dict{Tuple{Int, AbstractWorld}, Bool},
+    km::KripkeModel,
+    psi::Node
+)
+    @assert psi.token in values(operators) "Error - $(psi.token) is an invalid token"
+
+    #=
+    for w in km.frame.worlds
+        token_id = hash(psi.token)
+        if !haskey(L, (token_id, w))
+            L[(psi, w)] = (L[(psi.leftchild, w)] && L[(psi.rightchild, w)]) ? true : false
+        end
+    end
+    =#
+end
+
 function check(km::KripkeModel, formula::Formula)
-    L = Dict{Pair{String, AbstractWorld}, Bool}()
+    L = Dict{Tuple{Int, AbstractWorld}, Bool}()     # memoization dictionary
 
-    for ψ in subformulas(formula.tree)
-        if ψ.token ∈ alphabet
-            for w ∈ km.frame.worlds
-                L[Pair{ψ, w}] = (ψ ∈ km.evaluations[w]) ? true : false
-            end
+    for psi in subformulas(formula.tree)
+        if psi.token ∈ alphabet
+            _check_alphabet(L, km, psi)
+        elseif typeof(psi.token) <: SoleLogics.UnaryOperator
+            _check_unary(L, km, psi)
+        elseif typeof(psi.token) <: SoleLogics.BinaryOperator
+            _check_binary(L, km, psi)
         end
-
-        if Symbol(ψ.token) ∈ binary_operator
-            for w ∈ km.frame.worlds
-                # memoization here
-                L[Pair{ψ, w}] = (L[Pair{ψ.leftchild, w}] && L[Pair{ψ.rightchild, w}]) ? true : false
-                # ψ.token could represent some other binary_operator, apart from &&
-            end
-        end
-
-        if Symbol(ψ.token) ∈ unary_operator
-            for w ∈ km.frame.worlds
-                for v ∈ km.frame.worlds
-                    # incomplete
-                end
-            end
-        end
-
     end
 
     return L

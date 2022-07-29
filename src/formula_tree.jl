@@ -39,19 +39,23 @@ function _tree(tok, nodestack)
     # 2
     elseif tok in unary_operators.ops
         children = pop!(nodestack)
+
         parent!(children, newnode)
         rightchild!(newnode, children)
         newnode.formula = string(tok, children.formula)
+
         push!(nodestack, newnode)
     # 3
     elseif tok in binary_operators.ops
-        rightchild = pop!(nodestack)
-        leftchild = pop!(nodestack)
-        parent!(rightchild, newnode)
-        parent!(leftchild, newnode)
-        rightchild!(newnode, rightchild)
-        leftchild!(newnode, leftchild)
-        newnode.formula = string("(", leftchild.formula, tok, rightchild.formula, ")")
+        right_child = pop!(nodestack)
+        left_child = pop!(nodestack)
+
+        parent!(right_child, newnode)
+        parent!(left_child, newnode)
+        rightchild!(newnode, right_child)
+        leftchild!(newnode, left_child)
+        newnode.formula = string("(", left_child.formula, tok, right_child.formula, ")")
+
         push!(nodestack, newnode)
     else
         throw(error("Unknown token"))
@@ -70,7 +74,9 @@ function _subformulas(node::Node, phi::Vector{Node})
     if isdefined(node, :leftchild)
         _subformulas(node.leftchild, phi)
     end
+
     push!(phi, node)
+
     if isdefined(node, :rightchild)
         _subformulas(node.rightchild, phi)
     end
