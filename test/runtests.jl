@@ -53,6 +53,8 @@ end
 
 @testset "Checker" begin
 
+    #  Formula to check: ◊(¬(s)∧(r))
+    #
     #  p,q,r
     #   (5) <─────────────────────────┐
     #    ^                            │
