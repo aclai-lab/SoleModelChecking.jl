@@ -14,6 +14,7 @@ const operators_precedence = Dict{Union{AbstractOperator,Symbol}, Int}(
 
 # Given a symbol check if it's associated with an operator.
 # TODO: add more flexibility by allowing the user to define a custom set of operators.
+# TODO: remove unary and binary_operators, and take an operators list directly from SLogics.
 const operators = Dict{Symbol,AbstractOperator}()
 for op in [unary_operators.ops..., binary_operators.ops...]
     pair = (reltype(op), op)

@@ -26,7 +26,7 @@ function tree(expression::Vector{Union{String, AbstractOperator}})
         _tree(tok, nodestack)
     end
 
-    SoleLogics.size(first(nodestack))
+    SoleLogics.size!(first(nodestack))
     return Formula(first(nodestack))
 end
 

@@ -12,6 +12,7 @@ export isnumber, isproposition
 
 include("parser.jl")
 include("formula_tree.jl")
+include("op_behaviour.jl")
 include("checker.jl")
 
 end
