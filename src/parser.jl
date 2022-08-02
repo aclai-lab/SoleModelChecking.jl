@@ -113,3 +113,10 @@ function _shunting_yard(postfix, ops_stack, tok)
         push!(ops_stack, tok)
     end
 end
+
+# Regexp to isolate content inside []/⟨⟩ brackets pair
+# r"((?<=\])|(?=\[))|((?<=⟩)|(?=⟨))"
+# Using this in a split translates to:
+# "split here if my left character is a ], or if my right character is a [,
+# otherwise split here if my left character is ⟩ or if my right character is a ⟨
+# e.g split("[B](s)∧⟨A⟩((¬(s))∧(p))", r"((?<=\])|(?=\[))|((?<=⟩)|(?=⟨))")
