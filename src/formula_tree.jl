@@ -7,11 +7,11 @@ Given a certain token `tok`, 1 of 3 possible scenarios may occur:
 (regrouped in _tree function to keep code clean)
 
 1. `tok` is a propositional letter, hence a leaf in the formula tree
-    -> push a new Node(token) in the nodestack;
+    -> push a new Node(tok) in the nodestack;
 
 2. `tok` is an unary operator
-    -> wrap `tok` in a Node struct.
-    Link the new node with `nodestack` top node and push it back into the stack.
+    -> make a new Node(tok), then link it with the node popped from `nodestack` top.
+    Then push the new node into `nodestack`.
 
 3. It is a binary operator
     -> analogue to step 2., but 2 nodes are popped and linked to the new node.
@@ -37,7 +37,7 @@ function _tree(tok, nodestack)
         newnode.formula = string(tok)
         push!(nodestack, newnode)
     # 2
-    elseif tok in unary_operators.ops
+    elseif typeof(tok) <: AbstractUnaryOperator
         children = pop!(nodestack)
 
         parent!(children, newnode)
@@ -46,7 +46,7 @@ function _tree(tok, nodestack)
 
         push!(nodestack, newnode)
     # 3
-    elseif tok in binary_operators.ops
+    elseif typeof(tok) <: AbstractBinaryOperator
         right_child = pop!(nodestack)
         left_child = pop!(nodestack)
 

@@ -13,11 +13,11 @@ using Test
     #     ┌┴┐      ┴┐  ┴┐
     #     a b       c   d
 
-    exp1 = "(¬(a∧b)∨(□c∧◊d))"
+    exp1 = "(¬(a∧b)∨([□]c∧⟨◊⟩d))"
     sh1 = shunting_yard(exp1)
     f1  = tree(sh1)
     @test sh1 == ["a", "b", CONJUNCTION, NEGATION, "c", BOX, "d", DIAMOND, CONJUNCTION, DISJUNCTION]
-    @test inorder(f1.tree) == "((¬((a)∧(b)))∨((□(c))∧(◊(d))))"
+    @test inorder(f1.tree) == "((¬((a)∧(b)))∨(([□](c))∧(⟨◊⟩(d))))"
 
     #     ∧
     # ┌───┴────┐
@@ -44,11 +44,11 @@ using Test
     # ┌───┴───┐         ┌───┴───┐   ┴┐
     # a       b         c       d    e
 
-    exp3 = "(a∧b)∧(c∧d)∧(◊e)"
+    exp3 = "(a∧b)∧(c∧d)∧(⟨◊⟩e)"
     sh3 = shunting_yard(exp3)
     f3 = tree(sh3)
     @test sh3 == ["a", "b", CONJUNCTION, "c", "d", CONJUNCTION, "e", DIAMOND, CONJUNCTION, CONJUNCTION]
-    @test inorder(f3.tree) == "(((a)∧(b))∧(((c)∧(d))∧(◊(e))))"
+    @test inorder(f3.tree) == "(((a)∧(b))∧(((c)∧(d))∧(⟨◊⟩(e))))"
 end
 
 @testset "Checker" begin
@@ -82,7 +82,7 @@ end
     setindex!(evaluations, ["p","s"] , worlds[4])
     setindex!(evaluations, ["p","q","r"] , worlds[5])
 
-    formula = tree(shunting_yard("◊(¬(s)∧(r))"))
+    formula = tree(shunting_yard("⟨◊⟩(¬(s)∧(r))"))
     kf = KripkeFrame(worlds, relations)
     km = KripkeModel(kf, evaluations)
 

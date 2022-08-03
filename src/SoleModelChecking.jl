@@ -6,7 +6,6 @@ using Reexport
 export shunting_yard
 export tree, subformulas
 export KripkeFrame, KripkeModel, check
-export isnumber, isproposition
 
 @reexport using SoleLogics
 
