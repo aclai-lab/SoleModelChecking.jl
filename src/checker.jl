@@ -1,7 +1,5 @@
 #=
-TODO:
-    * Think about types involved (`relations` in KripkeFrame may be some other type)
-    * _check_unary it's ugly: EXMODOP and UNIVMODOP must be used from SoleLogics
+    TODO:
     * Find a way to memoize "a DISJUNCTION b" with the same hash as "b  DISJUNCTION a"
     * Compare performances (Dict vs SwissDict)
 =#
@@ -25,7 +23,7 @@ function _check_alphabet(
     for w in km.frame.worlds
         formula_id = hash(formula(psi))
         if !haskey(L, (formula_id, w))
-            L[(formula_id, w)] = (psi.token in km.evaluations[w]) ? true : false
+            L[(formula_id, w)] = (token(psi) in km.evaluations[w]) ? true : false
         end
     end
 end
@@ -35,18 +33,26 @@ function _check_unary(
     km::KripkeModel,
     psi::Node
 )
-    @assert psi.token in values(operators) "Error - $(psi.token) is an invalid token"
+    @assert token(psi) in values(operators) "Error - $(token(psi)) is an invalid token"
 
     psi_hash = hash(formula(psi))
     right_hash = hash(formula(rightchild(psi)))
 
     # TODO: Refactoring here
     for w in km.frame.worlds
-        if typeof(psi.token) == SoleLogics.UnaryOperator{:¬}
+        if haskey(L, (psi_hash, w))
+            continue
+        end
+
+        if typeof(token(psi)) == SoleLogics.UnaryOperator{:¬}
             L[(psi_hash, w)] = token(psi)(L[(right_hash, w)])
-        else
-            # ◊ or □ case; token(psi) works as a function call
-            L[(psi_hash, w)] = token(psi)(L, km.frame.relations[w], right_hash)
+        elseif typeof(token(psi)) <: AbstractModalOperator
+            # ⟨◊⟩ -> "◊" -> becomes :◊
+            fx = Symbol(chop(String(Symbol(token(psi))), head=1, tail=1))
+            # eval(:◊)(args)
+            L[(psi_hash, w)] = dispatch_modop(psi, L, km.frame.relations[w], right_hash, fx)
+            # previous solution
+            # L[(psi_hash, w)] = token(psi)(L, km.frame.relations[w], right_hash)
         end
     end
 end

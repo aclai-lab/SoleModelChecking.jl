@@ -87,7 +87,6 @@ end
     km = KripkeModel(kf, evaluations)
 
     L = check(km, formula)
-
     subf = subformulas(formula.tree)
 
     s_hash = hash(SoleLogics.formula(subf[1]))
@@ -124,4 +123,73 @@ end
     @test L[(formula_hash, worlds[3])] == true
     @test L[(formula_hash, worlds[4])] == true
     @test L[(formula_hash, worlds[5])] == false
+
+    #  Formula to check: □(p ∨ (¬(◊r)))
+    #
+    #                   p
+    #                  (3)
+    #                   ∧
+    #                   │
+    #                   v
+    #                   s
+    #   (1) <────────> (2) ────────> (4)
+    #   q,r                           s
+
+    worlds = [PointWorld(i) for i in 1:4]
+
+    relations = Dict{AbstractWorld, Vector{AbstractWorld}}()
+    setindex!(relations, [worlds[2]], worlds[1])
+    setindex!(relations, [worlds[1], worlds[3], worlds[4]], worlds[2])
+    setindex!(relations, [worlds[2]], worlds[3])
+    setindex!(relations, [], worlds[4])
+
+    evaluations = Dict{AbstractWorld, Vector{String}}()
+    setindex!(evaluations, ["q","r"] , worlds[1])
+    setindex!(evaluations, ["s"] , worlds[2])
+    setindex!(evaluations, ["p"] , worlds[3])
+    setindex!(evaluations, ["s"] , worlds[4])
+
+    formula = tree(shunting_yard("[□](p ∨ (¬(⟨◊⟩r)))"))
+    kf = KripkeFrame(worlds, relations)
+    km = KripkeModel(kf, evaluations)
+
+    L = check(km, formula)
+    subf = subformulas(formula.tree)
+
+    p_hash = hash(SoleLogics.formula(subf[1]))
+    @test L[(p_hash, worlds[1])] == false
+    @test L[(p_hash, worlds[2])] == false
+    @test L[(p_hash, worlds[3])] == true
+    @test L[(p_hash, worlds[4])] == false
+
+    r_hash = hash(SoleLogics.formula(subf[2]))
+    @test L[(r_hash, worlds[1])] == true
+    @test L[(r_hash, worlds[2])] == false
+    @test L[(r_hash, worlds[3])] == false
+    @test L[(r_hash, worlds[4])] == false
+
+    dr_hash = hash(SoleLogics.formula(subf[3]))
+    @test L[(dr_hash, worlds[1])] == false
+    @test L[(dr_hash, worlds[2])] == true
+    @test L[(dr_hash, worlds[3])] == false
+    @test L[(dr_hash, worlds[4])] == false
+
+    ndr_hash = hash(SoleLogics.formula(subf[4]))
+    @test L[(ndr_hash, worlds[1])] == true
+    @test L[(ndr_hash, worlds[2])] == false
+    @test L[(ndr_hash, worlds[3])] == true
+    @test L[(ndr_hash, worlds[4])] == true
+
+    por_hash = hash(SoleLogics.formula(subf[5]))
+    @test L[(por_hash, worlds[1])] == true
+    @test L[(por_hash, worlds[2])] == false
+    @test L[(por_hash, worlds[3])] == true
+    @test L[(por_hash, worlds[4])] == true
+
+    formula_hash = hash(SoleLogics.formula(subf[6]))
+    @test L[(formula_hash, worlds[1])] == false
+    @test L[(formula_hash, worlds[2])] == true
+    @test L[(formula_hash, worlds[3])] == false
+    @test L[(formula_hash, worlds[4])] == true
+
 end
