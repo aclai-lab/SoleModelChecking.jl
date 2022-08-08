@@ -5,6 +5,7 @@ using Reexport
 
 export shunting_yard
 export tree, subformulas
+export Worlds, Relations
 export KripkeFrame, KripkeModel, check
 
 @reexport using SoleLogics

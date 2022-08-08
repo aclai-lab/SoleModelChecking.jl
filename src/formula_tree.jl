@@ -63,21 +63,23 @@ function _tree(tok, nodestack)
 end
 
 # Collect each node in a tree, then sort them by size.
-function subformulas(node::Node)
-    phi = Node[]
-    _subformulas(node, phi)
-    sort!(phi, by = n -> n.size)
-    return phi
+function subformulas(root::Node; sorted=true)
+    nodes = Node[]
+    _subformulas(root, nodes)
+    if sorted
+        sort!(nodes, by = n -> n.size)
+    end
+    return nodes
 end
 
-function _subformulas(node::Node, phi::Vector{Node})
+function _subformulas(node::Node, nodes::Vector{Node})
     if isdefined(node, :leftchild)
-        _subformulas(node.leftchild, phi)
+        _subformulas(node.leftchild, nodes)
     end
 
-    push!(phi, node)
+    push!(nodes, node)
 
     if isdefined(node, :rightchild)
-        _subformulas(node.rightchild, phi)
+        _subformulas(node.rightchild, nodes)
     end
 end

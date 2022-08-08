@@ -8,9 +8,11 @@ const operators_precedence = Dict{Union{AbstractOperator,Symbol}, Int}(
     Symbol("[□]") => 20,
     Symbol("[L]") => 20,
     Symbol("⟨L⟩") => 20,
+    :→ => 10,
     :∧ => 10,
     :∨ => 10,
 )
+
 function precedence(op::Symbol)
     return operators_precedence[op]
 end
@@ -156,6 +158,3 @@ end
 # "split here if my left character is a ], or if my right character is a [,
 # otherwise split here if my left character is ⟩ or if my right character is a ⟨
 # e.g split("[B](s)∧⟨A⟩((¬(s))∧(p))", r"((?<=\])|(?=\[))|((?<=⟩)|(?=⟨))")
-
-# ◊(¬(s)∧(r))
-# [LRU](¬(s)∧(r))
