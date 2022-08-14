@@ -4,6 +4,11 @@
     * Compare performances (Dict vs SwissDict)
     * see Base.print_array to correctly print Worlds and Relations in REPL
     * add is_modal , is_existential_modal , is_universal_modal traits from SoleTraits
+    * adjust worlds and relations (<:AbstractWorld). Also, Worlds wrapper is in SoleWorlds!
+    * maybe L could operate through intersection between sets
+    * rename relations with adjacents
+    * generalize frames to multi-modal case
+    * remove hashing (just access dictionaries with strings)
 =#
 
 #################################
@@ -81,11 +86,10 @@ function _check_unary(
 
     # TODO: Refactoring here
     for w in worlds(km)
-        if haskey(L, (psi_hash, w))
+        current_key = (psi_hash, w)
+        if haskey(L, current_key)
             continue
         end
-
-        current_key = (psi_hash, w)
 
         if typeof(token(psi)) == SoleLogics.UnaryOperator{:¬}
             L[current_key] = token(psi)(L[(right_hash, w)])
@@ -98,7 +102,9 @@ function _check_unary(
             # Currently, only ◊ and □ operators are managed.
             # In the future, "fx" (for example the OLL function if we consider HS3)
             # should be passed to dispatch_modop
-            L[current_key] = dispatch_modop(psi, L, relations(km, w), right_hash)
+            L[current_key] = dispatch_modop(token(psi), L, relations(km, w), right_hash)
+        else
+            error("TODO expand code")
         end
     end
 end

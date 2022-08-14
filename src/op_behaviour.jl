@@ -1,3 +1,5 @@
+# Add token type to node
+
 # Temporary file to store operators behaviour.
 
 SoleLogics.NEGATION(a::Bool) = (!a)
@@ -9,31 +11,30 @@ SoleLogics.DISJUNCTION(a::Bool, b::Bool) = (a||b)
 SoleLogics.IMPLICATION(a::Bool, b::Bool) = ifelse(a == true && b == false, false, true)
 
 # use traits here (is_abstract_modop, is_existential_modop)
-dispatch_modop(
-    psi::Node,
+function dispatch_modop(
+    token::T,
     L::Dict{Tuple{UInt64, AbstractWorld}, Bool},
     neighbors::Vector{AbstractWorld},
-    previous_formula::UInt64, # change to phi
-) = begin
+    subformula::UInt64, # change to phi
+) where {T<:Union{AbstractExistentialModalOperator, AbstractExistentialModalOperator}}
     # ◊ Existential modal operator case:
     # s = false
     # foreach neighbor of psi
-    #   s = s or L[(previous_formula, neighbor)]
+    #   s = s or L[(subformula, neighbor)]
     #   if s is true, then i can already stop cycling
 
     # □ Universal modal operator case:
     # s = true
     # foreach neighbor of psi
-    #   s = s and L[(previous_formula, neighbor)]
+    #   s = s and L[(subformula, neighbor)]
     #   if s is false, then i can already stop cycling
 
-
-    start_cond = (typeof(token(psi)) <: AbstractExistentialModalOperator) ? false : true
-    op = (typeof(token(psi)) <: AbstractExistentialModalOperator) ? DISJUNCTION : CONJUNCTION
+    start_cond = (T <: AbstractExistentialModalOperator) ? false : true
+    op = (T <: AbstractExistentialModalOperator) ? DISJUNCTION : CONJUNCTION
 
     s = start_cond
     for neighbor in neighbors
-        s = op(s, L[(previous_formula, neighbor)])
+        s = op(s, L[(subformula, neighbor)])
         if s == !start_cond
             break;
         end
@@ -53,7 +54,7 @@ op2 = (typeof(token(psi)) <: AbstractExistentialModalOperator) ? CONJUNCTION : I
 
 s = start_cond
 for neighbor in neighbors
-    s = op1(s, op2(value, L[(previous_formula, neighbor)]))
+    s = op1(s, op2(value, L[(subformula, neighbor)]))
     if s == !start_cond
         break;
     end
