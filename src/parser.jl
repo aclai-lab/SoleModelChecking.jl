@@ -4,10 +4,8 @@ alphabet = string.(collect('a':'z'))
 # Could be an ImmutableDict instead
 const operators_precedence = Dict{Union{AbstractOperator,Symbol}, Int}(
     :¬ => 30,
-    Symbol("⟨◊⟩") => 20,
-    Symbol("[□]") => 20,
-    Symbol("[L]") => 20,
-    Symbol("⟨L⟩") => 20,
+    Symbol("⟨⟩") => 20,
+    Symbol("[]") => 20,
     :→ => 10,
     :∧ => 10,
     :∨ => 10,
@@ -22,7 +20,7 @@ end
 
 # The following operators pool will change based on the selected logic
 operators_pool = [NEGATION, DIAMOND, BOX, CONJUNCTION, DISJUNCTION]
-append!(operators_pool, (@modaloperators HSRELATIONS 1).ops)
+# append!(operators_pool, (@modaloperators HSRELATIONS 1).ops) # Expand code to support HS
 
 # Given a symbol check if it's associated with an operator.
 const operators = Dict{Symbol,AbstractOperator}()
@@ -151,10 +149,3 @@ function _shunting_yard(postfix, opstack, tok)
         push!(opstack, tok)
     end
 end
-
-# Regexp to isolate content inside []/⟨⟩ brackets pair
-# r"((?<=\])|(?=\[))|((?<=⟩)|(?=⟨))"
-# Using this in a split translates to:
-# "split here if my left character is a ], or if my right character is a [,
-# otherwise split here if my left character is ⟩ or if my right character is a ⟨
-# e.g split("[B](s)∧⟨A⟩((¬(s))∧(p))", r"((?<=\])|(?=\[))|((?<=⟩)|(?=⟨))")

@@ -40,7 +40,7 @@ function _tree(tok, nodestack)
     elseif typeof(tok) <: AbstractUnaryOperator
         children = pop!(nodestack)
 
-        parent!(children, newnode)
+        SoleLogics.parent!(children, newnode)
         rightchild!(newnode, children)
         newnode.formula = string(tok, children.formula)
 
@@ -50,8 +50,8 @@ function _tree(tok, nodestack)
         right_child = pop!(nodestack)
         left_child = pop!(nodestack)
 
-        parent!(right_child, newnode)
-        parent!(left_child, newnode)
+        SoleLogics.parent!(right_child, newnode)
+        SoleLogics.parent!(left_child, newnode)
         rightchild!(newnode, right_child)
         leftchild!(newnode, left_child)
         newnode.formula = string("(", left_child.formula, tok, right_child.formula, ")")
@@ -67,7 +67,7 @@ function subformulas(root::Node; sorted=true)
     nodes = Node[]
     _subformulas(root, nodes)
     if sorted
-        sort!(nodes, by = n -> n.size)
+        sort!(nodes, by = n -> SoleLogics.size(n))
     end
     return nodes
 end

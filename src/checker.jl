@@ -1,81 +1,81 @@
 #=
     TODO:
-    * Find a way to memoize "a DISJUNCTION b" with the same hash as "b  DISJUNCTION a"
+    * Find a way to memoize "a DISJUNCTION b" with the same hash as "b  DISJUNCTION a";
+      also, hashing could be removed (just do hash(token(node)) )
     * Compare performances (Dict vs SwissDict)
-    * see Base.print_array to correctly print Worlds and Relations in REPL
-    * add is_modal , is_existential_modal , is_universal_modal traits from SoleTraits
-    * adjust worlds and relations (<:AbstractWorld). Also, Worlds wrapper is in SoleWorlds!
     * maybe L could operate through intersection between sets
-    * rename relations with adjacents
-    * generalize frames to multi-modal case
-    * remove hashing (just access dictionaries with strings)
+    * KripkeModel getters/setters could be expanded (concat_worlds!(km::KripkeModel, ...))
+    * Expand Adjacents wrapper, find a way to implement Base.iterator(::Adjacents, ...)
 =#
 
 #################################
-#          Wrappers             #
+#           Wrappers            #
 #################################
-struct Worlds <: AbstractArray{AbstractWorld,1}
-    ws::AbstractArray{AbstractWorld,1}
+#= TODO Expand code in the future with Adjacents wrapper
+struct Adjacents{T<:AbstractWorld} <: AbstractDict{T, Worlds}
+    adjacents::Dict{T, Worlds{T}}
 end
+Base.values(adj::Adjacents) = values(adj.adjacents)
+Base.keys(adj::Adjacents) = keys(adj.adjacents)
+Base.isassigned(adj::Adjacents, w::AbstractWorld) = (w in adj.adjacents)
+Base.getindex(adj::Adjacents, key::AbstractWorld) = adj.adjacents[key]
+Base.setindex!(adj::Adjacents, value::Worlds, key::AbstractWorld) = adj.adjacents[key] = value
+Base.iterator <- TODO
+=#
 
-Base.size(ws::Worlds) = (length(ws.ws))
-Base.IndexStyle(::Type{<:Worlds}) = IndexLinear()
-Base.getindex(ws::Worlds, i::Int) = ws.ws[i]
-Base.setindex!(ws::Worlds, w::AbstractWorld, i::Int) = ws.ws[i] = w
+struct KripkeModel{T<:AbstractWorld}
+    worlds::Worlds{T}                   # worlds in the model
+    adjacents::Dict{T, Worlds{T}}       # neighbors of given world
+    valuations::Dict{T, Vector{String}} # list of prop. letters satisfied by a world
 
-Base.print_array(io, X::Type{<:Worlds}) = print(X.ws)
+    L::Dict{Tuple{UInt64, T}, Bool}     # memoization collection associated with this model
 
-struct Relations <: AbstractDict{AbstractWorld, Worlds}
-    rels::AbstractDict{AbstractWorld, Worlds}
+    function KripkeModel{T}() where {T<:AbstractWorld}
+        worlds = Worlds{T}([])
+        adjacents = Dict{T, Worlds{T}}([])
+        valuations = Dict{T, Vector{String}}()
+        L = Dict{Tuple{UInt64, T}, Bool}()
+
+        return new{T}(worlds, adjacents, valuations, L)
+    end
+
+    function KripkeModel{T}(
+        worlds::Worlds{T},
+        adjacents::Dict{T, Worlds{T}},
+        valuations::Dict{T, Vector{String}}
+    ) where {T<:AbstractWorld}
+        L = Dict{Tuple{UInt64, T}, Bool}()
+        return new{T}(worlds, adjacents, valuations, L)
+    end
 end
+worlds(km::KripkeModel) = km.worlds
 
-Base.size(rs::Relations) = (length(rs.rels))
-Base.IndexStyle(::Type{<:Relations}) = IndexLinear()
-Base.getindex(rs::Relations, key::AbstractWorld) = rs.rels[key]
-Base.setindex!(rs::Relations, value::Worlds, key::AbstractWorld) = rs.rels[key] = value
+adjacents(km::KripkeModel) = km.adjacents
+adjacents(km::KripkeModel, w::AbstractWorld) = km.adjacents[w]
 
-#################################
-#          KripkeFrame          #
-#        and KripkeModel        #
-#################################
-struct KripkeFrame
-    worlds::Vector{AbstractWorld}
-    relations::Dict{AbstractWorld, Vector{AbstractWorld}}
-    # relations::Dict{Tuple{AbstractWorld, AbstractWorld}, Bool}
-end
-worlds(kf::KripkeFrame) = kf.worlds
-relations(kf::KripkeFrame) = kf.relations
-relations(kf::KripkeFrame, w::AbstractWorld) = kf.relations[w]
-
-struct KripkeModel
-    frame::KripkeFrame
-    valuations::Dict{AbstractWorld, Vector{String}}
-end
-frame(km::KripkeModel) = km.frame
-worlds(km::KripkeModel) = worlds(frame(km))
-relations(km::KripkeModel) = relations(frame(km))
-relations(km::KripkeModel, w::AbstractWorld) = relations(frame(km), w)
 valuations(km::KripkeModel) = km.valuations
 valuations(km::KripkeModel, w::AbstractWorld) = km.valuations[w]
+
+memo(km::KripkeModel) = km.L
+memo(km, key::Tuple{UInt64, AbstractWorld}) = km.L[key]
+memo!(km::KripkeModel, key::Tuple{UInt64, AbstractWorld}, val::Bool) = km.L[key] = val
 
 #################################
 #         Model Checking        #
 #################################
 function _check_alphabet(
-    L::Dict{Tuple{UInt64, AbstractWorld}, Bool},
     km::KripkeModel,
     psi::Node
 )
     for w in worlds(km)
         formula_id = hash(formula(psi))
-        if !haskey(L, (formula_id, w))
-            L[(formula_id, w)] = (token(psi) in valuations(km,w)) ? true : false
+        if !haskey(memo(km), (formula_id, w))
+            memo!(km, (formula_id, w), (token(psi) in valuations(km,w)) ? true : false)
         end
     end
 end
 
 function _check_unary(
-    L::Dict{Tuple{UInt64, AbstractWorld}, Bool},
     km::KripkeModel,
     psi::Node,
 )
@@ -84,25 +84,20 @@ function _check_unary(
     psi_hash = hash(formula(psi))
     right_hash = hash(formula(rightchild(psi)))
 
-    # TODO: Refactoring here
     for w in worlds(km)
+        # If current key is already associated with a value, avoid computing it again
         current_key = (psi_hash, w)
-        if haskey(L, current_key)
+        if haskey(memo(km), current_key)
             continue
         end
 
+        # token(psi) acts like an operator (see op_behaviour.jl)
         if typeof(token(psi)) == SoleLogics.UnaryOperator{:¬}
-            L[current_key] = token(psi)(L[(right_hash, w)])
-        elseif typeof(token(psi)) <: AbstractModalOperator # use traits here
-            # Symbol(token(psi)) -> :⟨OLL⟩
-            # chop(String(:⟨OLL⟩), head=1, tail=1) -> "OLL"
-            # Symbol("OLL") -> :OLL
-            # Now it's possible to call a function with: eval(:OLL)(args)
-            # fx = Symbol(chop(String(Symbol(token(psi))), head=1, tail=1))
-            # Currently, only ◊ and □ operators are managed.
-            # In the future, "fx" (for example the OLL function if we consider HS3)
-            # should be passed to dispatch_modop
-            L[current_key] = dispatch_modop(token(psi), L, relations(km, w), right_hash)
+            memo_value = memo(km, (right_hash, w))
+            memo!(km, current_key, token(psi)(memo_value))
+        elseif is_modal_operator(token(psi))
+            # Visit w's neighbors (see op_behaviour.jl)
+            memo!(km, current_key, dispatch_modop(token(psi), km, w, right_hash))
         else
             error("TODO expand code")
         end
@@ -110,7 +105,6 @@ function _check_unary(
 end
 
 function _check_binary(
-    L::Dict{Tuple{UInt64, AbstractWorld}, Bool},
     km::KripkeModel,
     psi::Node
 )
@@ -122,36 +116,34 @@ function _check_binary(
 
     for w in worlds(km)
         current_key = (psi_hash, w)
-        if !haskey(L, current_key)
+        if !haskey(memo(km), current_key)
             left_key = (left_hash, w)
             right_key = (right_hash, w)
             # token(psi) works as a function call
             # e.g. ∧(a, b) returns "a && b"
-            L[current_key] = token(psi)(L[left_key], L[right_key]) # ? true : false
+            memo!(km, current_key, token(psi)(memo(km, left_key), memo(km, right_key)))
         end
     end
 end
 
-function _process_node(L::Dict{Tuple{UInt64, AbstractWorld}}, km::KripkeModel, psi::Node)
+function _process_node(km::KripkeModel, psi::Node)
     # When alphabets will be well-defined for each logic, use Traits here
     # "token(psi) in alphabet" -> "is_proposition(token(psi))"
     if token(psi) in alphabet
-        _check_alphabet(L, km, psi)
+        _check_alphabet(km, psi)
     elseif is_unary_operator(token(psi))
-        _check_unary(L, km, psi)
+        _check_unary(km, psi)
     elseif is_binary_operator(token(psi))
-        _check_binary(L, km, psi)
+        _check_binary(km, psi)
     end
 end
 
 function check(km::KripkeModel, formula::Formula)
-    L = Dict{Tuple{UInt64, AbstractWorld}, Bool}()
-
     # For each subformula in ascending order by size
     # evaluate L entry (hash(subformula), world) for each world.
     for psi in subformulas(formula.tree)
-        _process_node(L, km, psi)
+        _process_node(km, psi)
     end
 
-    return L
+    return memo(km)
 end
