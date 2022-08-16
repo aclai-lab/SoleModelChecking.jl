@@ -19,17 +19,13 @@ function GES(depth::Int64, P::Vector{String}, C::Operators)
     op = rand(C)
     ariety = is_binary_operator(op) ? 2 : 1
     i = rand(1:ariety)
+
     f = resize!(String[], ariety)
-
     f[i] = GES(depth-1, P, C)
-
-    for x in 1:ariety
-        if x == i
-            continue
-        end
-        j = rand(1:depth)
-        f[x] = GES(j, P, C)
+    for x in (union(1:(i-1),(i+1):ariety))
+        f[x] = GES(rand(1:depth), P, C)
     end
+
     return _str(op) * "(" * join(f, "") * ")"
 end
 
