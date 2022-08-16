@@ -1,31 +1,34 @@
-#=
-    TODO:
-    * Find a way to memoize "a DISJUNCTION b" with the same hash as "b  DISJUNCTION a";
-      also, hashing could be removed (just do hash(token(node)) )
-    * Compare performances (Dict vs SwissDict)
-    * maybe L could operate through intersection between sets
-    * KripkeModel getters/setters could be expanded (concat_worlds!(km::KripkeModel, ...))
-    * Expand Adjacents wrapper, find a way to implement Base.iterator(::Adjacents, ...)
-=#
-
 #################################
 #           Wrappers            #
 #################################
-#= TODO Expand code in the future with Adjacents wrapper
+
+# Adjacents is the simplest type of
 struct Adjacents{T<:AbstractWorld} <: AbstractDict{T, Worlds}
     adjacents::Dict{T, Worlds{T}}
+
+    function Adjacents{T}() where {T<:AbstractWorld}
+        return new{T}(Dict{T, Worlds{T}}());
+    end
+
+    function Adjacents{T}(adjacents::Dict{T, Worlds{T}}) where {T<:AbstractWorld}
+        return new{T}(adjacents);
+    end
 end
-Base.values(adj::Adjacents) = values(adj.adjacents)
+Base.iterate(adj::Adjacents, state=1) = state < length(adj.adjacents) ? Base.iterate(adj, state+1) : nothing
 Base.keys(adj::Adjacents) = keys(adj.adjacents)
+Base.values(adj::Adjacents) = values(adj.adjacents)
+
 Base.isassigned(adj::Adjacents, w::AbstractWorld) = (w in adj.adjacents)
 Base.getindex(adj::Adjacents, key::AbstractWorld) = adj.adjacents[key]
 Base.setindex!(adj::Adjacents, value::Worlds, key::AbstractWorld) = adj.adjacents[key] = value
-Base.iterator <- TODO
-=#
+Base.setindex!(adj::Adjacents, value::AbstractWorld, key::AbstractWorld) = adj.adjacents[key] = Worlds([value])
+
+Base.print(io::IO, adj::Adjacents) = print(adj.adjacents)
+Base.show(io::IO, adj::Adjacents) = show(adj.adjacents)
 
 struct KripkeModel{T<:AbstractWorld}
     worlds::Worlds{T}                   # worlds in the model
-    adjacents::Dict{T, Worlds{T}}       # neighbors of given world
+    adjacents::Adjacents{T}             # neighbors of a given world
     valuations::Dict{T, Vector{String}} # list of prop. letters satisfied by a world
 
     L::Dict{Tuple{UInt64, T}, Bool}     # memoization collection associated with this model
@@ -41,7 +44,7 @@ struct KripkeModel{T<:AbstractWorld}
 
     function KripkeModel{T}(
         worlds::Worlds{T},
-        adjacents::Dict{T, Worlds{T}},
+        adjacents::Adjacents{T},
         valuations::Dict{T, Vector{String}}
     ) where {T<:AbstractWorld}
         L = Dict{Tuple{UInt64, T}, Bool}()

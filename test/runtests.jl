@@ -11,30 +11,30 @@ using Test
     #      ∧       []   ⟨⟩
     #      │       │   │
     #     ┌┴┐      ┴┐  ┴┐
-    #     a b       c   d
+    #     p q       r   s
 
-    exp1 = "(¬(a∧b)∨([]c∧⟨⟩d))"
+    exp1 = "(¬(p∧q)∨([]r∧⟨⟩s))"
     sh1 = shunting_yard(exp1)
     f1  = tree(sh1)
-    @test sh1 == ["a", "b", CONJUNCTION, NEGATION, "c", BOX, "d", DIAMOND, CONJUNCTION, DISJUNCTION]
-    @test inorder(f1.tree) == "((¬((a)∧(b)))∨(([](c))∧(⟨⟩(d))))"
+    @test sh1 == ["p", "q", CONJUNCTION, NEGATION, "r", BOX, "s", DIAMOND, CONJUNCTION, DISJUNCTION]
+    @test inorder(f1.tree) == "((¬((p)∧(q)))∨(([](r))∧(⟨⟩(s))))"
 
     #     ∧
     # ┌───┴────┐
-    # a        ∧
+    # p        ∧
     #    ┌─────┴─────┐
-    #    b           ∧
+    #    q           ∧
     #                │
     #              ┌─┴─┐
-    #              c   ∧
+    #              r   ∧
     #                  │
     #                 ┌┴┐
-    #                 d e
-    exp2 = "(a∧b∧c∧d∧e)"
+    #                 s t
+    exp2 = "(p∧q∧r∧s∧t)"
     sh2 = shunting_yard(exp2)
     f2 = tree(sh2)
-    @test sh2 == ["a", "b", "c", "d", "e", fill(CONJUNCTION, (1,4))...]
-    @test inorder(f2.tree) == "((a)∧((b)∧((c)∧((d)∧(e)))))"
+    @test sh2 == ["p", "q", "r", "s", "t", fill(CONJUNCTION, (1,4))...]
+    @test inorder(f2.tree) == "((p)∧((q)∧((r)∧((s)∧(t)))))"
 
     #             ∧
     #     ┌───────┴─────────────┐
@@ -42,13 +42,13 @@ using Test
     #     ∧                 ┌───┴───┐
     #     │                 ∧       ⟨⟩
     # ┌───┴───┐         ┌───┴───┐   ┴┐
-    # a       b         c       d    e
+    # p       q         r       s    t
 
-    exp3 = "(a∧b)∧(c∧d)∧(⟨⟩e)"
+    exp3 = "(p∧q)∧(r∧s)∧(⟨⟩t)"
     sh3 = shunting_yard(exp3)
     f3 = tree(sh3)
-    @test sh3 == ["a", "b", CONJUNCTION, "c", "d", CONJUNCTION, "e", DIAMOND, CONJUNCTION, CONJUNCTION]
-    @test inorder(f3.tree) == "(((a)∧(b))∧(((c)∧(d))∧(⟨⟩(e))))"
+    @test sh3 == ["p", "q", CONJUNCTION, "r", "s", CONJUNCTION, "t", DIAMOND, CONJUNCTION, CONJUNCTION]
+    @test inorder(f3.tree) == "(((p)∧(q))∧(((r)∧(s))∧(⟨⟩(t))))"
 end
 
 @testset "Checker" begin
@@ -68,12 +68,12 @@ end
 
     worlds = Worlds([PointWorld(i) for i in 1:5])
 
-    adjacents = Dict{PointWorld, Worlds{PointWorld}}()
-    setindex!(adjacents, Worlds([worlds[2], worlds[5]]), worlds[1])
-    setindex!(adjacents, Worlds([worlds[3], worlds[4]]), worlds[2])
-    setindex!(adjacents, Worlds([worlds[5]]), worlds[3])
-    setindex!(adjacents, Worlds([worlds[2], worlds[3]]), worlds[4])
-    setindex!(adjacents, Worlds{PointWorld}([]), worlds[5])
+    adjs = Adjacents{PointWorld}()
+    setindex!(adjs, Worlds([worlds[2], worlds[5]]), worlds[1])
+    setindex!(adjs, Worlds([worlds[3], worlds[4]]), worlds[2])
+    setindex!(adjs, worlds[5], worlds[3])
+    setindex!(adjs, Worlds([worlds[2], worlds[3]]), worlds[4])
+    setindex!(adjs, Worlds{PointWorld}([]), worlds[5])
 
     evaluations = Dict{PointWorld, Vector{String}}()
     setindex!(evaluations, ["p","q"] , worlds[1])
@@ -83,7 +83,7 @@ end
     setindex!(evaluations, ["p","q","r"] , worlds[5])
 
     formula = tree(shunting_yard("⟨⟩(¬(s)∧(r))"))
-    km = KripkeModel{PointWorld}(worlds, adjacents, evaluations)
+    km = KripkeModel{PointWorld}(worlds, adjs, evaluations)
 
     L = check(km, formula)
     subf = subformulas(formula.tree)
@@ -136,11 +136,11 @@ end
 
     worlds = Worlds([PointWorld(i) for i in 1:4])
 
-    adjacents = Dict{PointWorld, Worlds{PointWorld}}()
-    setindex!(adjacents, Worlds([worlds[2]]), worlds[1])
-    setindex!(adjacents, Worlds([worlds[1], worlds[3], worlds[4]]), worlds[2])
-    setindex!(adjacents, Worlds([worlds[2]]), worlds[3])
-    setindex!(adjacents, Worlds{PointWorld}([]), worlds[4])
+    adjs = Adjacents{PointWorld}()
+    setindex!(adjs, worlds[2], worlds[1])
+    setindex!(adjs, Worlds([worlds[1], worlds[3], worlds[4]]), worlds[2])
+    setindex!(adjs, worlds[2], worlds[3])
+    setindex!(adjs, Worlds{PointWorld}([]), worlds[4])
 
     evaluations = Dict{PointWorld, Vector{String}}()
     setindex!(evaluations, ["q","r"] , worlds[1])
@@ -149,7 +149,7 @@ end
     setindex!(evaluations, ["s"] , worlds[4])
 
     formula = tree(shunting_yard("[](p ∨ (¬(⟨⟩r)))"))
-    km = KripkeModel{PointWorld}(worlds, adjacents, evaluations)
+    km = KripkeModel{PointWorld}(worlds, adjs, evaluations)
 
     L = check(km, formula)
     subf = subformulas(formula.tree)

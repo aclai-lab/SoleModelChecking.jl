@@ -1,7 +1,21 @@
-# Temporary dummy alphabet
-alphabet = string.(collect('a':'z'))
+###########################
+#           Temp          #
+#          section        #
+###########################
 
-# Could be an ImmutableDict instead
+# What is contained in this section is just temporary code that has to be
+# expanded/moved/removed after implementative decisions.
+# At the moment, this is just a support for let a toy Model Checker run.
+
+alphabet = SoleLogics.alphabet(MODAL_LOGIC)
+
+# Given a symbol check if it's associated with an operator.
+# This is useful to check if an expression is malformed.
+const operators = Dict{Symbol,AbstractOperator}()
+for op in SoleLogics.operators(MODAL_LOGIC)
+    operators[Symbol(op)] = op
+end
+
 const operators_precedence = Dict{Union{AbstractOperator,Symbol}, Int}(
     :¬ => 30,
     Symbol("⟨⟩") => 20,
@@ -10,23 +24,10 @@ const operators_precedence = Dict{Union{AbstractOperator,Symbol}, Int}(
     :∧ => 10,
     :∨ => 10,
 )
+precedence(op::Symbol) = operators_precedence[op]
+precedence(op::Union{AbstractOperator, String}) = operators_precedence[Symbol(op)]
+##### End of Temp section ####
 
-function precedence(op::Symbol)
-    return operators_precedence[op]
-end
-function precedence(op::Union{AbstractOperator, String})
-    return operators_precedence[Symbol(op)]
-end
-
-# The following operators pool will change based on the selected logic
-operators_pool = [NEGATION, DIAMOND, BOX, CONJUNCTION, DISJUNCTION]
-# append!(operators_pool, (@modaloperators HSRELATIONS 1).ops) # Expand code to support HS
-
-# Given a symbol check if it's associated with an operator.
-const operators = Dict{Symbol,AbstractOperator}()
-for op in operators_pool
-    operators[Symbol(op)] = op
-end
 
 # A simple lexer capable of distinguish operators in a string
 function tokenizer(expression::String)

@@ -1,0 +1,14 @@
+☐ Build a formula-tree generation system
+    ☐ Random, but still correct, formulas given a chosen length
+    ☐ Modal depth regulation
+    ☐ Memoization regulation
+    ☐ Test and think about other parameters to tweak
+
+☐ Build an appropriate model generation system
+
+☐ Write a Relations hierarchy (in SoleLogics!) thus extending KripkeModel's `Adjacents`
+
+☐ Find a way to memoize "a DISJUNCTION b" with the same hash as "b  DISJUNCTION a"; 
+☐ Hashing could be removed (just do hash(token(node)) )
+
+☐ maybe L could operate through intersection between sets
