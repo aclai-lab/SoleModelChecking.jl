@@ -33,7 +33,7 @@ function _generate(
 
     op = rand(C)
 
-    # More elegant using a loop
+    # TODO refactor this using a for and "ariety" from SoleLogics
     if is_unary_operator(op)
         return vcat(_generate(depth-1, P, C), [op])
     elseif is_binary_operator(op)
