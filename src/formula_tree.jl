@@ -30,6 +30,11 @@ function tree(expression::Vector{Union{String, AbstractOperator}})
     return Formula(first(nodestack))
 end
 
+# Safe type dispatching
+function tree(expression::Vector{Any})
+    tree(convert(Vector{Union{String, AbstractOperator}}, expression))
+end
+
 function _tree(tok, nodestack)
     newnode = Node(tok)
     # 1

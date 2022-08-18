@@ -1,5 +1,8 @@
 using SoleModelChecking
 using Test
+using Random
+
+rand(MersenneTwister(314592))
 
 @testset "Shunting yard and formula tree" begin
 
@@ -190,4 +193,11 @@ end
     @test L[(formula_hash, worlds[3])] == false
     @test L[(formula_hash, worlds[4])] == true
 
+end
+
+@testset "Generation" begin
+    P = SoleLogics.alphabet(MODAL_LOGIC)
+    C = SoleLogics.operators(MODAL_LOGIC)
+    # TODO test if a random generated formula tree is correct
+    # and has some expected characteristic
 end

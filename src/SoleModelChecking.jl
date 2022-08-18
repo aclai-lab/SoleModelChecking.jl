@@ -12,7 +12,7 @@ export Worlds, Adjacents
 export KripkeModel, check
 
 # Generation
-export GES
+export generate
 
 @reexport using SoleLogics
 
@@ -21,6 +21,6 @@ include("formula_tree.jl")
 include("checker.jl")
 include("op_behaviour.jl")
 
-# include("generator.jl")
+include("generator.jl")
 
 end
