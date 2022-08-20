@@ -63,7 +63,7 @@ function _tree(tok, nodestack)
 
         push!(nodestack, newnode)
     else
-        throw(error("Unknown token"))
+        throw(error("Unknown token $tok"))
     end
 end
 
