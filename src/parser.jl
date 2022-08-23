@@ -18,8 +18,8 @@ end
 
 const operators_precedence = Dict{Union{AbstractOperator,Symbol}, Int}(
     :¬ => 30,
-    Symbol("⟨⟩") => 20,
-    Symbol("[]") => 20,
+    Symbol("◊") => 20,
+    Symbol("□") => 20,
     :→ => 10,
     :∧ => 10,
     :∨ => 10,

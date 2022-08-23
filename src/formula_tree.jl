@@ -31,7 +31,7 @@ function tree(expression::Vector{Union{String, AbstractOperator}})
 end
 
 # Safe type dispatching
-function tree(expression::Vector{Any})
+function tree(expression::Vector{<:Any})
     tree(convert(Vector{Union{String, AbstractOperator}}, expression))
 end
 

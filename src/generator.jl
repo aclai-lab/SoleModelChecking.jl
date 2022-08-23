@@ -16,28 +16,28 @@ ariety(::AbstractBinaryOperator) = return 2
 
 # TODO change depth to Int8
 function generate(
-    depth::Int64,
+    depth::Int,
     P::Vector{String} = SoleLogics.alphabet(MODAL_LOGIC),
     C::Operators = SoleLogics.operators(MODAL_LOGIC);
-    modal_depth = depth
+    modal_maxdepth = depth
 )
-    return tree(_generate(depth, P, C, modal_depth=modal_depth))
+    return tree(_generate(depth, P, C, modal_depth=modal_maxdepth))
 end
 
 function _generate(
-    depth::Int64,
+    depth::Int,
     P::Vector{String},
     C::Operators;
     modal_depth::Int64
 )
     # Propositional letters are always leaf
-    if depth==0
-        return rand(P)
+    if depth==1
+        return [rand(P)]
     end
 
     # Random operator is chosen
     # If it is modal but modal_depth has already been reached,
-    # then randomly chose another operator until it is valid
+    # then randomly chose another operator until it is validz
     op = rand(C)
     while is_modal_operator(op) && modal_depth==0
         op = rand(C)
