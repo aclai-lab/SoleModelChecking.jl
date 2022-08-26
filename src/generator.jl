@@ -1,8 +1,7 @@
-using Random
-rand(MersenneTwister(314592))
-
-ariety(::AbstractUnaryOperator) = return 1
-ariety(::AbstractBinaryOperator) = return 2
+######################
+#      Formulas      #
+#     generation     #
+######################
 
 # Simple toy generator for a formula-tree
 # given expected depth, a set of propositional letters and a set of operators.
@@ -14,9 +13,8 @@ ariety(::AbstractBinaryOperator) = return 2
 # C = SoleLogics.operators(MODAL_LOGIC)
 # generate(2, P, C) -> tree(["q", "s", AND, DIAMOND]) -> ◊(q ∧ s)
 
-# TODO change depth to Int8
 function generate(
-    depth::Int,
+    depth::Int64,
     P::Vector{String} = SoleLogics.alphabet(MODAL_LOGIC),
     C::Operators = SoleLogics.operators(MODAL_LOGIC);
     modal_maxdepth = depth
@@ -25,7 +23,7 @@ function generate(
 end
 
 function _generate(
-    depth::Int,
+    depth::Int64,
     P::Vector{String},
     C::Operators;
     modal_depth::Int64
@@ -50,3 +48,109 @@ function _generate(
 
     return f
 end
+
+######################
+#       Models       #
+#     generation     #
+######################
+
+# https://hal.archives-ouvertes.fr/hal-00471255v2/document
+
+# Erdos-Rényi method
+function gnp(n::Int64, p::Float64)
+    M = _gnp(n, p)
+
+    worlds = Worlds([PointWorld(i) for i in 1:n])
+    adjs = Adjacents{PointWorld}()
+
+    # Left triangular matrix is checked to
+    for i in 1:n
+        neighbors = Worlds{PointWorld}([])
+        for j in 1:i
+            if M[i,j] == 1
+                push!(neighbors.worlds, worlds[j])
+            end
+        end
+        setindex!(adjs, neighbors, worlds[i])
+    end
+
+    return adjs
+end
+
+function _gnp(n::Int64, p::Float64)
+    M = zeros(Int8, n, n)
+
+    for i in 1:n, j in 1:i
+        if rand() < p
+            M[i,j] = 1
+        end
+    end
+
+    return M
+end
+
+# Fan-in/Fan-out method
+function fanfan(n::Int64, id::Int64, od::Int64)
+    adjs = Adjacents{PointWorld}()
+    setindex!(adjs, Worlds{PointWorld}([]), PointWorld(0))
+
+    od_queue = PriorityQueue{PointWorld, Int}(PointWorld(0) => 0)
+
+    while length(adjs.adjacents) <= n
+        if rand() <= 0.5
+            _fanout(adjs, od_queue, od)
+        else
+            _fanin(adjs, od_queue, id, od)
+        end
+    end
+
+    return adjs
+end
+
+function _fanout(adjs::Adjacents{PointWorld}, od_queue::PriorityQueue{PointWorld, Int}, od::Int64)
+    v,m = peek(od_queue)
+    m = od - m
+
+    for i in rand(1:m)
+        new_node = PointWorld(length(adjs))
+        setindex!(adjs, Worlds{PointWorld}([]), new_node)
+        od_queue[new_node] = 0
+        push!(adjs, v, new_node)
+    end
+end
+
+function _fanin(adjs::Adjacents{PointWorld}, od_queue::PriorityQueue{PointWorld, Int}, id::Int64, od::Int64)
+    S = filter(x -> x[2]<od, od_queue)
+    T = Set(sample(collect(S), rand(1:min(id, length(S))), replace=false))
+
+    for t in T
+        new_node = PointWorld(length(adjs))
+        setindex!(adjs, Worlds{PointWorld}([t[1]]), new_node)
+    end
+end
+
+######################
+#        Plot        #
+#      Utilities     #
+######################
+
+#= Graph plotting
+using GraphRecipes
+using Plots
+
+const n = 15
+const A = Float64[ rand() < 0.5 ? 0 : 1 for i=1:n, j=1:n]
+for i=1:n
+    A[i, 1:i-1] = A[1:i-1, i]
+    A[i, i] = 0
+enda
+
+graphplot(A,
+          markersize = 0.2,
+          node_weights = 1:n,
+          markercolor = range(colorant"yellow", stop=colorant"red", length=n),
+          names = 1:n,
+          fontsize = 10,
+          linecolor = :darkgrey
+          )
+=#

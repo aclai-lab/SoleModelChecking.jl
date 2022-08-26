@@ -17,11 +17,15 @@ end
 Base.iterate(adj::Adjacents, state=1) = state < length(adj.adjacents) ? Base.iterate(adj, state+1) : nothing
 Base.keys(adj::Adjacents) = keys(adj.adjacents)
 Base.values(adj::Adjacents) = values(adj.adjacents)
+Base.length(adj::Adjacents) = length(adj.adjacents)
 
 Base.isassigned(adj::Adjacents, w::AbstractWorld) = (w in adj.adjacents)
 Base.getindex(adj::Adjacents, key::AbstractWorld) = adj.adjacents[key]
 Base.setindex!(adj::Adjacents, value::Worlds, key::AbstractWorld) = adj.adjacents[key] = value
 Base.setindex!(adj::Adjacents, value::AbstractWorld, key::AbstractWorld) = adj.adjacents[key] = Worlds([value])
+
+Base.push!(adj::Adjacents, key::AbstractWorld, value::AbstractWorld) = push!(adj.adjacents[key].worlds, value)
+Base.push!(adj::Adjacents, key::AbstractWorld, value::Worlds) = push!(adj.adjacents[key].worlds, value...)
 
 Base.print(io::IO, adj::Adjacents) = print(adj.adjacents)
 Base.show(io::IO, adj::Adjacents) = show(adj.adjacents)

@@ -1,7 +1,11 @@
 module SoleModelChecking
 
 using DataStructures
+using StatsBase
+using Random
 using Reexport
+
+using GraphPlot
 
 # Formula tree
 export shunting_yard
@@ -12,7 +16,7 @@ export Worlds, Adjacents
 export KripkeModel, check
 
 # Generation
-export generate
+export generate, gnp, fanfan
 
 @reexport using SoleLogics
 

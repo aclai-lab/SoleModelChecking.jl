@@ -2,8 +2,6 @@ using SoleModelChecking
 using Test
 using Random
 
-rand(MersenneTwister(314592))
-
 @testset "Shunting yard and formula tree" begin
     # Formula tree testing is further explained in "Formula tree generation" testset
 
