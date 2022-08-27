@@ -90,14 +90,14 @@ function _gnp(n::Int64, p::Float64)
 end
 
 # Fan-in/Fan-out method
-function fanfan(n::Int64, id::Int64, od::Int64)
+function fanfan(n::Int64, id::Int64, od::Int64; threshold=0.5)
     adjs = Adjacents{PointWorld}()
     setindex!(adjs, Worlds{PointWorld}([]), PointWorld(0))
 
-    od_queue = PriorityQueue{PointWorld, Int}(PointWorld(0) => 0)
+    od_queue = PriorityQueue{PointWorld, Int64}(PointWorld(0) => 0)
 
     while length(adjs.adjacents) <= n
-        if rand() <= 0.5
+        if rand() <= threshold
             _fanout(adjs, od_queue, od)
         else
             _fanin(adjs, od_queue, id, od)
@@ -108,24 +108,40 @@ function fanfan(n::Int64, id::Int64, od::Int64)
 end
 
 function _fanout(adjs::Adjacents{PointWorld}, od_queue::PriorityQueue{PointWorld, Int}, od::Int64)
+    #=
+    Find the vertex v with the biggest difference between
+    its out-degree and od. Let (od-m) be this difference.
+    Add a random number of vertices between 1 and mo
+    to V and add edges from v to these new vertices.
+    =#
     v,m = peek(od_queue)
-    m = od - m
 
-    for i in rand(1:m)
+    for i in rand(1:(od-m))
         new_node = PointWorld(length(adjs))
         setindex!(adjs, Worlds{PointWorld}([]), new_node)
-        od_queue[new_node] = 0
         push!(adjs, v, new_node)
+
+        od_queue[new_node] = 0
+        od_queue[v] = od_queue[v] + 1
     end
 end
 
 function _fanin(adjs::Adjacents{PointWorld}, od_queue::PriorityQueue{PointWorld, Int}, id::Int64, od::Int64)
+    #=
+    Find the set S of all vertices that have out-degree < od.
+    Compute a subset T of S of size at most id.
+    Add a new vertex v and add new edges (v, t) for all t ∈ T
+    =#
     S = filter(x -> x[2]<od, od_queue)
     T = Set(sample(collect(S), rand(1:min(id, length(S))), replace=false))
 
+    v = PointWorld(length(adjs))
     for t in T
-        new_node = PointWorld(length(adjs))
-        setindex!(adjs, Worlds{PointWorld}([t[1]]), new_node)
+        setindex!(adjs, Worlds{PointWorld}([]), v)
+        push!(adjs, t[1], v)
+
+        od_queue[t[1]] = od_queue[t[1]] + 1
+        od_queue[v] = 0
     end
 end
 
