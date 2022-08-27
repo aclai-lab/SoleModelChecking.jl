@@ -196,10 +196,8 @@ end
 
 @testset "Formula tree generation" begin
 
-    # TODO test if a random generated formula tree is correct
-    # and has some expected characteristic
-    function test_formula(dim::Int)
-        formula = generate(dim)
+    function fxtest_general(dim::Int64)
+        formula = fgen(dim)
         @test height(formula.tree) == dim
         @test SoleLogics.size(formula.tree) >= dim
         @test SoleLogics.size(formula.tree) <= 2^dim - 1
@@ -211,11 +209,23 @@ end
         end
     end
 
-    P = SoleLogics.alphabet(MODAL_LOGIC)
-    C = SoleLogics.operators(MODAL_LOGIC)
+    function fxtest_modal(dim::Int64)
+        error("TODO expand code")
+    end
+
+    # P = SoleLogics.alphabet(MODAL_LOGIC)
+    # C = SoleLogics.operators(MODAL_LOGIC)
 
     for i in 1:20
-        test_formula(i)
+        fxtest_general(i)
+    end
+
+end
+
+@testset "Model generation" begin
+
+    function test_km(dim::Int64, id::Int64, od::Int64)
+        error("TODO expand code")
     end
 
 end

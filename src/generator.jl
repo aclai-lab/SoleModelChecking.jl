@@ -11,18 +11,18 @@
 #
 # P = SoleLogics.alphabet(MODAL_LOGIC)
 # C = SoleLogics.operators(MODAL_LOGIC)
-# generate(2, P, C) -> tree(["q", "s", AND, DIAMOND]) -> ◊(q ∧ s)
+# fgen(2, P, C) -> tree(["q", "s", AND, DIAMOND]) -> ◊(q ∧ s)
 
-function generate(
-    depth::Int64,
+function fgen(
+    depth::Int64;
     P::Vector{String} = SoleLogics.alphabet(MODAL_LOGIC),
-    C::Operators = SoleLogics.operators(MODAL_LOGIC);
+    C::Operators = SoleLogics.operators(MODAL_LOGIC),
     modal_maxdepth = depth
 )
-    return tree(_generate(depth, P, C, modal_depth=modal_maxdepth))
+    return tree(_fgen(depth, P, C, modal_depth=modal_maxdepth))
 end
 
-function _generate(
+function _fgen(
     depth::Int64,
     P::Vector{String},
     C::Operators;
@@ -42,7 +42,7 @@ function _generate(
     end
 
     # Operator C refers to a number of subformulas equals to its ariety
-    f = vcat(map(_ -> _generate(depth-1, P, C, modal_depth = modal_depth - is_modal_operator(op)), 1:ariety(op))...)
+    f = vcat(map(_ -> _fgen(depth-1, P, C, modal_depth = modal_depth - is_modal_operator(op)), 1:ariety(op))...)
     f = convert(Vector{Union{String, AbstractOperator}}, f)
     push!(f, op)
 
@@ -57,6 +57,9 @@ end
 # https://hal.archives-ouvertes.fr/hal-00471255v2/document
 
 # Erdos-Rényi method
+# Create a graph as an adjacency matrix by randomling
+# sampling (probability p) the edges between n nodes.
+# Convert the same graph to an adjacency list and return it.
 function gnp(n::Int64, p::Float64)
     M = _gnp(n, p)
 
@@ -90,6 +93,12 @@ function _gnp(n::Int64, p::Float64)
 end
 
 # Fan-in/Fan-out method
+# Create a graph with n nodes as an adjacency list and return it.
+# It's possible to set a global maximum to input_degree and output_degree.
+# Also it's possible to choose how likely a certain "phase" will happen
+# 1) _fanout increases a certain node's output_degree grow by spawning new vertices
+# 2) _fanin increases the input_degree of a certain group of nodes
+#    by linking a single new vertices to all of them
 function fanfan(n::Int64, id::Int64, od::Int64; threshold=0.5)
     adjs = Adjacents{PointWorld}()
     setindex!(adjs, Worlds{PointWorld}([]), PointWorld(0))
@@ -109,10 +118,9 @@ end
 
 function _fanout(adjs::Adjacents{PointWorld}, od_queue::PriorityQueue{PointWorld, Int}, od::Int64)
     #=
-    Find the vertex v with the biggest difference between
-    its out-degree and od. Let (od-m) be this difference.
-    Add a random number of vertices between 1 and mo
-    to V and add edges from v to these new vertices.
+    Find the vertex v with the biggest difference between its out-degree and od.
+    Create a random number of vertices between 1 and (od-m)
+    and add edges from v to these new vertices.
     =#
     v,m = peek(od_queue)
 
@@ -143,6 +151,36 @@ function _fanin(adjs::Adjacents{PointWorld}, od_queue::PriorityQueue{PointWorld,
         od_queue[t[1]] = od_queue[t[1]] + 1
         od_queue[v] = 0
     end
+end
+
+# Associate each world to a subset of proposistional letters
+function dispense_alphabet(
+    ws::Worlds{T};
+    P::Vector{String} = SoleLogics.alphabet(MODAL_LOGIC)
+) where {T<:AbstractWorld}
+    evals = Dict{T, Vector{String}}()
+    n = length(ws)
+    for w in ws
+        evals[w] = sample(P, rand(1:length(P)), replace=false)
+    end
+    return evals
+end
+
+# Generate and return a kripke model.
+# This utility uses `fanfan` and `dispense_alphabet` default methods
+# to define `adjacents` and `evaluations` but one could create its model
+# piece by piece and then calling KripkeModel constructor.
+function kripke_model(
+    n::Int64,
+    in_degree::Int64,   # needed by fanfan
+    out_degree::Int64;  # needed by fanfan
+    P::Vector{String} = SoleLogics.alphabet(MODAL_LOGIC),
+    threshold=0.5       # needed by fanfan
+)
+    ws = Worlds{PointWorld}(world_gen(n))
+    adjs = fanfan(n, in_degree, out_degree, threshold=threshold)
+    evs = dispense_alphabet(ws, P=P)
+    return KripkeModel{PointWorld}(ws, adjs, evs)
 end
 
 ######################

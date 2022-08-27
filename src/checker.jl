@@ -33,26 +33,26 @@ Base.show(io::IO, adj::Adjacents) = show(adj.adjacents)
 struct KripkeModel{T<:AbstractWorld}
     worlds::Worlds{T}                   # worlds in the model
     adjacents::Adjacents{T}             # neighbors of a given world
-    valuations::Dict{T, Vector{String}} # list of prop. letters satisfied by a world
+    evaluations::Dict{T, Vector{String}} # list of prop. letters satisfied by a world
 
     L::Dict{Tuple{UInt64, T}, Bool}     # memoization collection associated with this model
 
     function KripkeModel{T}() where {T<:AbstractWorld}
         worlds = Worlds{T}([])
         adjacents = Dict{T, Worlds{T}}([])
-        valuations = Dict{T, Vector{String}}()
+        evaluations = Dict{T, Vector{String}}()
         L = Dict{Tuple{UInt64, T}, Bool}()
 
-        return new{T}(worlds, adjacents, valuations, L)
+        return new{T}(worlds, adjacents, evaluations, L)
     end
 
     function KripkeModel{T}(
         worlds::Worlds{T},
         adjacents::Adjacents{T},
-        valuations::Dict{T, Vector{String}}
+        evaluations::Dict{T, Vector{String}}
     ) where {T<:AbstractWorld}
         L = Dict{Tuple{UInt64, T}, Bool}()
-        return new{T}(worlds, adjacents, valuations, L)
+        return new{T}(worlds, adjacents, evaluations, L)
     end
 end
 worlds(km::KripkeModel) = km.worlds
@@ -60,8 +60,8 @@ worlds(km::KripkeModel) = km.worlds
 adjacents(km::KripkeModel) = km.adjacents
 adjacents(km::KripkeModel, w::AbstractWorld) = km.adjacents[w]
 
-valuations(km::KripkeModel) = km.valuations
-valuations(km::KripkeModel, w::AbstractWorld) = km.valuations[w]
+evaluations(km::KripkeModel) = km.evaluations
+evaluations(km::KripkeModel, w::AbstractWorld) = km.evaluations[w]
 
 memo(km::KripkeModel) = km.L
 memo(km, key::Tuple{UInt64, AbstractWorld}) = km.L[key]
@@ -77,7 +77,7 @@ function _check_alphabet(
     for w in worlds(km)
         formula_id = hash(formula(psi))
         if !haskey(memo(km), (formula_id, w))
-            memo!(km, (formula_id, w), (token(psi) in valuations(km,w)) ? true : false)
+            memo!(km, (formula_id, w), (token(psi) in evaluations(km,w)) ? true : false)
         end
     end
 end
