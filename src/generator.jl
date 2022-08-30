@@ -1,8 +1,8 @@
-# TODO: Prendo solo la logica
-# TODO: Usare un alias per Vector{String} -> StringAlphabet come fa Giovanni
+# TODO: Prendo solo la logica -- ok
+# TODO: Usare un alias per Vector{String} -> StringAlphabet come fa Giovanni --- ok
 # TODO: change depth with height
 # TODO: add seed
-# TODO: add is_commutative trait
+# TODO: add is_commutative trait -- ok
 
 ######################
 #      Formulas      #
@@ -17,41 +17,49 @@
 #
 # P = SoleLogics.alphabet(MODAL_LOGIC)
 # C = SoleLogics.operators(MODAL_LOGIC)
-# fgen(2, P, C) -> tree(["q", "s", AND, DIAMOND]) -> ◊(q ∧ s)
+# gen_formula(2, P, C) -> tree(["q", "s", AND, DIAMOND]) -> ◊(q ∧ s)
 
-function fgen(
-    depth::Int64;
-    P::Vector{String} = SoleLogics.alphabet(MODAL_LOGIC),   #Alphabet
+function gen_formula(
+    height::Integer;
+    P::LetterAlphabet = SoleLogics.alphabet(MODAL_LOGIC),
     C::Operators = SoleLogics.operators(MODAL_LOGIC),
-    modal_maxdepth = depth
+    max_modepth::Integer = height
 )
-    return tree(_fgen(depth, P, C, modal_depth=modal_maxdepth))
+    return tree(_gen_formula(height, P, C, modal_depth=max_modepth))
 end
 
-function _fgen(
-    depth::Int64,
-    P::Vector{String},
+function gen_formula(
+    height::Integer,
+    logic::AbstractLogic;
+    max_modepth::Integer = height
+)
+    return tree(_gen_formula(height, SoleLogics.alphabet(logic), SoleLogics.operators(logic), modal_depth=max_modepth))
+end
+
+function _gen_formula(
+    height::Integer,
+    P::LetterAlphabet,
     C::Operators;
-    modal_depth::Int64
+    modal_depth::Integer
 )
     # Propositional letters are always leaf
-    if depth==1
+    if height==1
         return [rand(P)]
     end
 
-    # Random operator is chosen
-    # If it is modal but modal_depth has already been reached,
-    # then randomly chose another valid operator
-
+    # A random valid operator is chosen
     if modal_depth == 0
+        #= TODO: this part is broken and the momentary placeholder is ugly
         @assert length(C[!is_modal_operator.(C)]) >= 0
         op = rand(C[!is_modal_operator.(C)])
+        =#
+        op = rand(filter(x -> !is_modal_operator(x), C))
     else
         op = rand(C)
     end
 
     # Operator C refers to a number of subformulas equals to its ariety
-    f = vcat(map(_ -> _fgen(depth-1, P, C, modal_depth = modal_depth - is_modal_operator(op)), 1:ariety(op))...)
+    f = vcat(map(_ -> _gen_formula(height-1, P, C, modal_depth = modal_depth - is_modal_operator(op)), 1:ariety(op))...)
     f = convert(Vector{Union{String, AbstractOperator}}, f)
     push!(f, op)
 
@@ -69,13 +77,13 @@ end
 # Create a graph as an adjacency matrix by randomling
 # sampling (probability p) the edges between n nodes.
 # Convert the same graph to an adjacency list and return it.
-function gnp(n::Int64, p::Float64)
+function gnp(n::Integer, p::Float64)
     M = _gnp(n, p)
 
     worlds = Worlds([PointWorld(i) for i in 1:n])
     adjs = Adjacents{PointWorld}()
 
-    # Left triangular matrix is checked to
+    # Left triangular matrix is used to generate an adjacency list
     for i in 1:n
         neighbors = Worlds{PointWorld}([])
         for j in 1:i
@@ -89,7 +97,7 @@ function gnp(n::Int64, p::Float64)
     return adjs
 end
 
-function _gnp(n::Int64, p::Float64)
+function _gnp(n::Integer, p::Real)
     M = zeros(Int8, n, n)
 
     for i in 1:n, j in 1:i
@@ -108,7 +116,7 @@ end
 # 1) _fanout increases a certain node's output_degree grow by spawning new vertices
 # 2) _fanin increases the input_degree of a certain group of nodes
 #    by linking a single new vertices to all of them
-function fanfan(n::Int64, id::Int64, od::Int64; threshold=0.5)
+function fanfan(n::Integer, id::Integer, od::Integer; threshold=0.5)
     adjs = Adjacents{PointWorld}()
     setindex!(adjs, Worlds{PointWorld}([]), PointWorld(0))  # Ecco qua ad esempio metti un GenericWorld
 
@@ -125,7 +133,7 @@ function fanfan(n::Int64, id::Int64, od::Int64; threshold=0.5)
     return adjs
 end
 
-function _fanout(adjs::Adjacents{PointWorld}, od_queue::PriorityQueue{PointWorld, Int}, od::Int64)
+function _fanout(adjs::Adjacents{PointWorld}, od_queue::PriorityQueue{PointWorld, Int}, od::Integer)
     #=
     Find the vertex v with the biggest difference between its out-degree and od.
     Create a random number of vertices between 1 and (od-m)
@@ -143,7 +151,7 @@ function _fanout(adjs::Adjacents{PointWorld}, od_queue::PriorityQueue{PointWorld
     end
 end
 
-function _fanin(adjs::Adjacents{PointWorld}, od_queue::PriorityQueue{PointWorld, Int}, id::Int64, od::Int64)
+function _fanin(adjs::Adjacents{PointWorld}, od_queue::PriorityQueue{PointWorld, Int}, id::Integer, od::Integer)
     #=
     Find the set S of all vertices that have out-degree < od.
     Compute a subset T of S of size at most id.
@@ -165,9 +173,9 @@ end
 # Associate each world to a subset of proposistional letters
 function dispense_alphabet(
     ws::Worlds{T};
-    P::Vector{String} = SoleLogics.alphabet(MODAL_LOGIC)
+    P::LetterAlphabet = SoleLogics.alphabet(MODAL_LOGIC)
 ) where {T<:AbstractWorld}
-    evals = Dict{T, Vector{String}}()
+    evals = Dict{T, LetterAlphabet}()
     n = length(ws)
     for w in ws
         evals[w] = sample(P, rand(1:length(P)), replace=false)
@@ -175,16 +183,17 @@ function dispense_alphabet(
     return evals
 end
 
+# NOTE: read the other gen_kmodel dispatch below as it's signature is more flexible.
 # Generate and return a kripke model.
 # This utility uses `fanfan` and `dispense_alphabet` default methods
 # to define `adjacents` and `evaluations` but one could create its model
 # piece by piece and then calling KripkeModel constructor.
-function kripke_model(
-    n::Int64,
-    in_degree::Int64,   # needed by fanfan
-    out_degree::Int64;  # needed by fanfan
-    P::Vector{String} = SoleLogics.alphabet(MODAL_LOGIC),
-    threshold=0.5       # needed by fanfan
+function gen_kmodel(
+    n::Integer,
+    in_degree::Integer,   # needed by fanfan
+    out_degree::Integer;  # needed by fanfan
+    P::LetterAlphabet = SoleLogics.alphabet(MODAL_LOGIC),
+    threshold=0.5         # needed by fanfan
 )
     ws = Worlds{PointWorld}(world_gen(n))
     adjs = fanfan(n, in_degree, out_degree, threshold=threshold)
@@ -192,10 +201,20 @@ function kripke_model(
     return KripkeModel{PointWorld}(ws, adjs, evs)
 end
 
-#=
-function gen_kripke_model(
-    method::Symbol;
-    P::Vector{String} = SoleLogics.alphabet(MODAL_LOGIC),
+# Generate and return a kripke model.
+# Example of valid calls:
+# gen_kmodel(15, MODAL_LOGIC, :erdos_renyi, 0.42)
+# gen_kmodel(10, MODAL_LOGIC, :fanin_fanout, 3, 4)
+#
+# NOTE:
+# This function is a bit tricky as in kwargs (that is, the arguments of the selected method)
+# n has to be excluded (in fact it is already the first argument)
+# In other words this dispatch is not compatible with graph-generation functions whose
+# signature differs from fx(n, other_arguments...)
+function gen_kmodel(
+    n::Integer,
+    logic::AbstractLogic,
+    method::Symbol,
     kwargs...
 )
     if method == :fanin_fanout
@@ -206,12 +225,11 @@ function gen_kripke_model(
         error("Invalid method provided: $method. Refer to the docs <add link here>")
     end
 
-    adjs = fx(;kwargs...)
+    adjs = fx(n, kwargs...)
     ws = Worlds{PointWorld}(world_gen(length(adjs)))
-    evs = dispense_alphabet(ws, P=P)
+    evs = dispense_alphabet(ws, P=SoleLogics.alphabet(logic))
     return KripkeModel{PointWorld}(ws, adjs, evs)
 end
-=#
 
 ######################
 #        Plot        #

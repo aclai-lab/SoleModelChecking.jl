@@ -196,11 +196,11 @@ end
 
 @testset "Formula tree generation" begin
 
-    function fxtest_general(dim::Int64)
-        formula = fgen(dim)
-        @test height(formula.tree) == dim
-        @test SoleLogics.size(formula.tree) >= dim
-        @test SoleLogics.size(formula.tree) <= 2^dim - 1
+    function fxtest_general(height::Integer)
+        formula = gen_formula(height)
+        @test SoleLogics.height(formula.tree) == height
+        @test SoleLogics.size(formula.tree) >= height
+        @test SoleLogics.size(formula.tree) <= 2^height - 1
 
         for node in subformulas(formula.tree, sorted=false)
             lsize = isdefined(node, :leftchild) ? SoleLogics.size(leftchild(node)) : 0
@@ -209,23 +209,19 @@ end
         end
     end
 
-    function fxtest_modal(dim::Int64)
-        error("TODO expand code")
+    function fxtest_modal(height::Integer, max_modepth::Integer)
+        root = gen_formula(height, max_modepth=max_modepth).tree
+        @test SoleLogics.modal_depth(root) <= max_modepth
     end
-
-    # P = SoleLogics.alphabet(MODAL_LOGIC)
-    # C = SoleLogics.operators(MODAL_LOGIC)
 
     for i in 1:20
         fxtest_general(i)
+        fxtest_modal(i, i-rand(1:i))
     end
 
 end
 
 @testset "Model generation" begin
 
-    function test_km(dim::Int64, id::Int64, od::Int64)
-        error("TODO expand code")
-    end
 
 end

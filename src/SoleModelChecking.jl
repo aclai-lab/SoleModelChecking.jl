@@ -16,9 +16,9 @@ export Worlds, Adjacents
 export KripkeModel, check
 
 # Generation
-export fgen
-export gnp, fanfan
-export kripke_model
+export gen_formula
+export gnp, fanfan  #NOTE: this is for test purpose and will be removed later
+export gen_kmodel
 
 @reexport using SoleLogics
 

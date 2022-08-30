@@ -37,10 +37,9 @@ struct KripkeModel{T<:AbstractWorld}
 
     # Generalize this using an abstract type, with a common interface
     # with two different types of memoization
+    # NOTE: solution 1 will be discharged
     # 1) (Formula, mondo) -> Bool               # memo type 1
     # 2) Formula -> mondi in cui vale Formula   # memo type 2
-
-    # Nel caso senza memoizzazione in realtà ce l'ho ma la resetto ad ogni formula
     L::Dict{Tuple{UInt64, T}, Bool}     # memoization collection associated with this model
 
     function KripkeModel{T}() where {T<:AbstractWorld}
