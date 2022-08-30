@@ -35,6 +35,12 @@ struct KripkeModel{T<:AbstractWorld}
     adjacents::Adjacents{T}             # neighbors of a given world
     evaluations::Dict{T, Vector{String}} # list of prop. letters satisfied by a world
 
+    # Generalize this using an abstract type, with a common interface
+    # with two different types of memoization
+    # 1) (Formula, mondo) -> Bool               # memo type 1
+    # 2) Formula -> mondi in cui vale Formula   # memo type 2
+
+    # Nel caso senza memoizzazione in realtà ce l'ho ma la resetto ad ogni formula
     L::Dict{Tuple{UInt64, T}, Bool}     # memoization collection associated with this model
 
     function KripkeModel{T}() where {T<:AbstractWorld}
@@ -154,3 +160,8 @@ function check(km::KripkeModel, formula::Formula)
 
     return memo(km)
 end
+
+#=
+    provo le varie funzioni che accettano Φ ed 𝑀 (vedi tesi di Eduard)
+    for alg in algs
+=#

@@ -1,23 +1,33 @@
-☐ Build a formula-tree generation system
+✓ Build a formula-tree generation system
     ✓ Random, but still correct, formulas given a chosen length
     ✓ Modal depth regulation
-    ☐ Memoization regulation
-    ☐ Test and think about other parameters to tweak
+    ½ Test
+    ☐ Think about other parameters to tweak
 
 ☐ Build an appropriate model generation system
 
-☐ Int64 should be changed to UInt/UInt8 where needed
-
-☐ Write a Relations hierarchy (in SoleLogics!) thus extending KripkeModel's `Adjacents`
+☐ Model checking
+    ☐ Memoization regulation
+    ☐ Multiple formulas check
+    ☐ Multiple formulas and Multiple models
 
 ☐ Find a way to memoize "a DISJUNCTION b" with the same hash as "b  DISJUNCTION a"; 
+    (Normalize function before model checking)
 ☐ Hashing could be removed (just do hash(token(node)) )
+☐ Maybe L could operate through intersection between sets
+☐ Refine code since now it only works with PointWorlds
 
-☐ maybe L could operate through intersection between sets
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Todos for the future:
 
-I also added those dependencies:
-    GraphPlot = "a2cc645c-3eea-5389-862e-a155d0052231"
-    GraphRecipes = "bd48cda9-67a9-57be-86fa-5b3c104eda73"
-    Graphs = "86223c79-3864-5bf0-83f7-82e725a168b6"
-    Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
-    Compose = "a81c6b42-2e10-5240-aca2-a61377ecd94b"
+☐ Write a Relations hierarchy (in SoleLogics) thus extending KripkeModel's `Adjacents`
+☐ Write some Letter struct and avoid working with plain strings (SoleAlphabet)
+☐ Int64 should be changed to Integer where needed
+
+New dependencies (see Project.toml) to GraphPlotting:
+GraphPlot = "a2cc645c-3eea-5389-862e-a155d0052231"
+GraphRecipes = "bd48cda9-67a9-57be-86fa-5b3c104eda73"
+Graphs = "86223c79-3864-5bf0-83f7-82e725a168b6"
+Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
+Compose = "a81c6b42-2e10-5240-aca2-a61377ecd94b"
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

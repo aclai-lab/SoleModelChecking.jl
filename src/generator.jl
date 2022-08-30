@@ -1,3 +1,9 @@
+# TODO: Prendo solo la logica
+# TODO: Usare un alias per Vector{String} -> StringAlphabet come fa Giovanni
+# TODO: change depth with height
+# TODO: add seed
+# TODO: add is_commutative trait
+
 ######################
 #      Formulas      #
 #     generation     #
@@ -15,7 +21,7 @@
 
 function fgen(
     depth::Int64;
-    P::Vector{String} = SoleLogics.alphabet(MODAL_LOGIC),
+    P::Vector{String} = SoleLogics.alphabet(MODAL_LOGIC),   #Alphabet
     C::Operators = SoleLogics.operators(MODAL_LOGIC),
     modal_maxdepth = depth
 )
@@ -35,9 +41,12 @@ function _fgen(
 
     # Random operator is chosen
     # If it is modal but modal_depth has already been reached,
-    # then randomly chose another operator until it is validz
-    op = rand(C)
-    while is_modal_operator(op) && modal_depth==0
+    # then randomly chose another valid operator
+
+    if modal_depth == 0
+        @assert length(C[!is_modal_operator.(C)]) >= 0
+        op = rand(C[!is_modal_operator.(C)])
+    else
         op = rand(C)
     end
 
@@ -101,7 +110,7 @@ end
 #    by linking a single new vertices to all of them
 function fanfan(n::Int64, id::Int64, od::Int64; threshold=0.5)
     adjs = Adjacents{PointWorld}()
-    setindex!(adjs, Worlds{PointWorld}([]), PointWorld(0))
+    setindex!(adjs, Worlds{PointWorld}([]), PointWorld(0))  # Ecco qua ad esempio metti un GenericWorld
 
     od_queue = PriorityQueue{PointWorld, Int64}(PointWorld(0) => 0)
 
@@ -183,6 +192,27 @@ function kripke_model(
     return KripkeModel{PointWorld}(ws, adjs, evs)
 end
 
+#=
+function gen_kripke_model(
+    method::Symbol;
+    P::Vector{String} = SoleLogics.alphabet(MODAL_LOGIC),
+    kwargs...
+)
+    if method == :fanin_fanout
+        fx = fanfan
+    elseif method == :erdos_renyi
+        fx = gnp
+    else
+        error("Invalid method provided: $method. Refer to the docs <add link here>")
+    end
+
+    adjs = fx(;kwargs...)
+    ws = Worlds{PointWorld}(world_gen(length(adjs)))
+    evs = dispense_alphabet(ws, P=P)
+    return KripkeModel{PointWorld}(ws, adjs, evs)
+end
+=#
+
 ######################
 #        Plot        #
 #      Utilities     #
@@ -197,7 +227,7 @@ const A = Float64[ rand() < 0.5 ? 0 : 1 for i=1:n, j=1:n]
 for i=1:n
     A[i, 1:i-1] = A[1:i-1, i]
     A[i, i] = 0
-enda
+end
 
 graphplot(A,
           markersize = 0.2,
