@@ -13,7 +13,9 @@ export tree, subformulas
 
 # Model checker
 export Worlds, Adjacents
-export KripkeModel, check
+export KripkeModel, worlds, adjacents, evaluations
+export memo, contains, push!
+export check
 
 # Generation
 export gen_formula

@@ -91,39 +91,19 @@ end
     subf = subformulas(formula.tree)
 
     s_hash = hash(SoleLogics.formula(subf[1]))
-    @test L[(s_hash, worlds[1])] == false
-    @test L[(s_hash, worlds[2])] == false
-    @test L[(s_hash, worlds[3])] == true
-    @test L[(s_hash, worlds[4])] == true
-    @test L[(s_hash, worlds[5])] == false
+    @test memo(km, s_hash) == Set{PointWorld}([worlds[3], worlds[4]])
 
     r_hash = hash(SoleLogics.formula(subf[2]))
-    @test L[(r_hash, worlds[1])] == false
-    @test L[(r_hash, worlds[2])] == true
-    @test L[(r_hash, worlds[3])] == false
-    @test L[(r_hash, worlds[4])] == false
-    @test L[(r_hash, worlds[5])] == true
+    @test memo(km, r_hash) == Set{PointWorld}([worlds[2], worlds[5]])
 
     nots_hash = hash(SoleLogics.formula(subf[3]))
-    @test L[(nots_hash, worlds[1])] == true
-    @test L[(nots_hash, worlds[2])] == true
-    @test L[(nots_hash, worlds[3])] == false
-    @test L[(nots_hash, worlds[4])] == false
-    @test L[(nots_hash, worlds[5])] == true
+    @test memo(km, nots_hash) == Set{PointWorld}([worlds[1], worlds[2], worlds[5]])
 
     and_hash = hash(SoleLogics.formula(subf[4]))
-    @test L[(and_hash, worlds[1])] == false
-    @test L[(and_hash, worlds[2])] == true
-    @test L[(and_hash, worlds[3])] == false
-    @test L[(and_hash, worlds[4])] == false
-    @test L[(and_hash, worlds[5])] == true
+    @test memo(km, and_hash) == Set{PointWorld}([worlds[2], worlds[5]])
 
     formula_hash = hash(SoleLogics.formula(subf[5]))
-    @test L[(formula_hash, worlds[1])] == true
-    @test L[(formula_hash, worlds[2])] == false
-    @test L[(formula_hash, worlds[3])] == true
-    @test L[(formula_hash, worlds[4])] == true
-    @test L[(formula_hash, worlds[5])] == false
+    @test memo(km, formula_hash) == Set{PointWorld}([worlds[1], worlds[3], worlds[4]])
 
     #  Formula to check: □(p ∨ (¬(◊r)))
     #
@@ -157,41 +137,22 @@ end
     subf = subformulas(formula.tree)
 
     p_hash = hash(SoleLogics.formula(subf[1]))
-    @test L[(p_hash, worlds[1])] == false
-    @test L[(p_hash, worlds[2])] == false
-    @test L[(p_hash, worlds[3])] == true
-    @test L[(p_hash, worlds[4])] == false
+    @test memo(km, p_hash) == Set{PointWorld}([worlds[3]])
 
     r_hash = hash(SoleLogics.formula(subf[2]))
-    @test L[(r_hash, worlds[1])] == true
-    @test L[(r_hash, worlds[2])] == false
-    @test L[(r_hash, worlds[3])] == false
-    @test L[(r_hash, worlds[4])] == false
+    @test memo(km, r_hash) == Set{PointWorld}([worlds[1]])
 
     dr_hash = hash(SoleLogics.formula(subf[3]))
-    @test L[(dr_hash, worlds[1])] == false
-    @test L[(dr_hash, worlds[2])] == true
-    @test L[(dr_hash, worlds[3])] == false
-    @test L[(dr_hash, worlds[4])] == false
+    @test memo(km, dr_hash) == Set{PointWorld}([worlds[2]])
 
     ndr_hash = hash(SoleLogics.formula(subf[4]))
-    @test L[(ndr_hash, worlds[1])] == true
-    @test L[(ndr_hash, worlds[2])] == false
-    @test L[(ndr_hash, worlds[3])] == true
-    @test L[(ndr_hash, worlds[4])] == true
+    @test memo(km, ndr_hash) == Set{PointWorld}([worlds[1], worlds[3], worlds[4]])
 
     por_hash = hash(SoleLogics.formula(subf[5]))
-    @test L[(por_hash, worlds[1])] == true
-    @test L[(por_hash, worlds[2])] == false
-    @test L[(por_hash, worlds[3])] == true
-    @test L[(por_hash, worlds[4])] == true
+    @test memo(km, por_hash) == Set{PointWorld}([worlds[1], worlds[3], worlds[4]])
 
     formula_hash = hash(SoleLogics.formula(subf[6]))
-    @test L[(formula_hash, worlds[1])] == false
-    @test L[(formula_hash, worlds[2])] == true
-    @test L[(formula_hash, worlds[3])] == false
-    @test L[(formula_hash, worlds[4])] == true
-
+    @test memo(km, formula_hash) == Set{PointWorld}([worlds[2], worlds[4]])
 end
 
 @testset "Formula tree generation" begin

@@ -1,8 +1,9 @@
 #################################
-#           Wrappers            #
+#          Kripke Model         #
+#           components          #
 #################################
 
-# Adjacents is the simplest type of
+# Adjacents is the simplest type of relation-collection
 struct Adjacents{T<:AbstractWorld} <: AbstractDict{T, Worlds}
     adjacents::Dict{T, Worlds{T}}
 
@@ -30,23 +31,29 @@ Base.push!(adj::Adjacents, key::AbstractWorld, value::Worlds) = push!(adj.adjace
 Base.print(io::IO, adj::Adjacents) = print(adj.adjacents)
 Base.show(io::IO, adj::Adjacents) = show(adj.adjacents)
 
-struct KripkeModel{T<:AbstractWorld}
-    worlds::Worlds{T}                   # worlds in the model
-    adjacents::Adjacents{T}             # neighbors of a given world
-    evaluations::Dict{T, Vector{String}} # list of prop. letters satisfied by a world
+# TODO: may be useful to define a common interface for different/"similar" Memo types
+#
+# e.g at the moment memoization value-type can be switched between Set and Vector as
+# `contains`, `push!` and all the operators custom dispatching does support those types.
+# This flexibility could be further extended
+const WorldsSet{T<:AbstractWorld} = Set{T}  # Write this in SoleWorlds, near Worlds wrapper
+const MemoValueType{T} = WorldsSet{T}
+const Memo{T} = Dict{Integer, MemoValueType{T}}
+# const MemoValue{T} = Worlds{T}            <- a possible working alternative
+# const Memo{T} = Dict{Integer, Worlds{T}}   <-
 
-    # Generalize this using an abstract type, with a common interface
-    # with two different types of memoization
-    # NOTE: solution 1 will be discharged
-    # 1) (Formula, mondo) -> Bool               # memo type 1
-    # 2) Formula -> mondi in cui vale Formula   # memo type 2
-    L::Dict{Tuple{UInt64, T}, Bool}     # memoization collection associated with this model
+struct KripkeModel{T<:AbstractWorld}
+    worlds::Worlds{T}                    # worlds in the model
+    adjacents::Adjacents{T}              # neighbors of a given world
+    evaluations::Dict{T, LetterAlphabet} # list of prop. letters satisfied by a world
+
+    L::Memo{T}                           # memoization collection associated with this model
 
     function KripkeModel{T}() where {T<:AbstractWorld}
         worlds = Worlds{T}([])
         adjacents = Dict{T, Worlds{T}}([])
         evaluations = Dict{T, Vector{String}}()
-        L = Dict{Tuple{UInt64, T}, Bool}()
+        L = Memo{T}()
 
         return new{T}(worlds, adjacents, evaluations, L)
     end
@@ -56,7 +63,7 @@ struct KripkeModel{T<:AbstractWorld}
         adjacents::Adjacents{T},
         evaluations::Dict{T, Vector{String}}
     ) where {T<:AbstractWorld}
-        L = Dict{Tuple{UInt64, T}, Bool}()
+        L = Memo{T}()
         return new{T}(worlds, adjacents, evaluations, L)
     end
 end
@@ -68,9 +75,39 @@ adjacents(km::KripkeModel, w::AbstractWorld) = km.adjacents[w]
 evaluations(km::KripkeModel) = km.evaluations
 evaluations(km::KripkeModel, w::AbstractWorld) = km.evaluations[w]
 
+Base.eltype(::Type{KripkeModel{T}}) where {T} = T
+
+########################
+#     Memo structure   #
+#       utilities      #
+########################
 memo(km::KripkeModel) = km.L
-memo(km, key::Tuple{UInt64, AbstractWorld}) = km.L[key]
-memo!(km::KripkeModel, key::Tuple{UInt64, AbstractWorld}, val::Bool) = km.L[key] = val
+_memo_kexist(km::KripkeModel, key::Integer) = haskey(memo(km), key)
+
+# L[key] is checked to avoid "key not found" error
+memo(km::KripkeModel, key::Integer) = begin
+    if _memo_kexist(km, key)
+        memo(km)[key]
+    else
+        MemoValueType{eltype(km)}([])
+    end
+end
+
+# This setter is dangerous as it doesn't check if key exists in the memo structure
+# memo!(km::KripkeModel, key::Integer, val::MemoValueType) = km.L[key] = val # memo(km, key) = val
+
+contains(km::KripkeModel, key::Integer, value::AbstractWorld) = begin
+    (!_memo_kexist(km, key) || !(value in memo(km, key))) ? false : true
+end
+
+# If I try to insert in a non-allocated memory place,
+# i first reserve space to this new key.
+Base.push!(km::KripkeModel, key::Integer, val::AbstractWorld) = begin
+    if !_memo_kexist(km, key)
+        setindex!(memo(km), MemoValueType{eltype(km)}([]), key)
+    end
+    push!(memo(km, key), val)
+end
 
 #################################
 #         Model Checking        #
@@ -79,10 +116,11 @@ function _check_alphabet(
     km::KripkeModel,
     psi::Node
 )
+    key = hash(formula(psi))
+    # If current world is not associated to the subformula-hash, but it should, then do it.
     for w in worlds(km)
-        formula_id = hash(formula(psi))
-        if !haskey(memo(km), (formula_id, w))
-            memo!(km, (formula_id, w), (token(psi) in evaluations(km,w)) ? true : false)
+        if !(w in values(memo(km, key))) && token(psi) in evaluations(km,w)
+            push!(km, key, w)
         end
     end
 end
@@ -93,26 +131,27 @@ function _check_unary(
 )
     @assert token(psi) in values(operators) "Error - $(token(psi)) is an invalid token"
 
-    psi_hash = hash(formula(psi))
-    right_hash = hash(formula(rightchild(psi)))
+    key = hash(formula(psi))
+    # Result is already computed
+    if _memo_kexist(km, key)
+        return
+    end
 
-    for w in worlds(km)
-        # If current key is already associated with a value, avoid computing it again
-        current_key = (psi_hash, w)
-        if haskey(memo(km), current_key)
-            continue
-        end
+    right_key = hash(formula(rightchild(psi)))
 
-        # token(psi) acts like an operator (see op_behaviour.jl)
-        if typeof(token(psi)) == SoleLogics.UnaryOperator{:¬}
-            memo_value = memo(km, (right_hash, w))
-            memo!(km, current_key, token(psi)(memo_value))
-        elseif is_modal_operator(token(psi))
-            # Visit w's neighbors (see op_behaviour.jl)
-            memo!(km, current_key, dispatch_modop(token(psi), km, w, right_hash))
-        else
-            error("TODO expand code")
+    # Ad-hoc negation case
+    if typeof(token(psi)) == SoleLogics.UnaryOperator{:¬}
+        # NOTE: why is casting to MemoValueType needed here?
+        setindex!(memo(km), MemoValueType{eltype(km)}(setdiff(worlds(km), memo(km, right_key))), key)
+    elseif is_modal_operator(token(psi))
+        for w in worlds(km)
+            # Consider w's neighbors
+            if dispatch_modop(token(psi), km, w, right_key)
+                push!(km, key, w)
+            end
         end
+    else
+        error("TODO expand code")
     end
 end
 
@@ -120,25 +159,23 @@ function _check_binary(
     km::KripkeModel,
     psi::Node
 )
+    # TODO: `operators` collection has to be removed from parser.jl
     @assert token(psi) in values(operators) "Error - $(token(psi)) is an invalid token"
 
-    psi_hash = hash(formula(psi))
-    left_hash = hash(formula(leftchild(psi)))
-    right_hash = hash(formula(rightchild(psi)))
-
-    for w in worlds(km)
-        current_key = (psi_hash, w)
-        if !haskey(memo(km), current_key)
-            left_key = (left_hash, w)
-            right_key = (right_hash, w)
-            # token(psi) works as a function call
-            # e.g. ∧(a, b) returns "a && b"
-            memo!(km, current_key, token(psi)(memo(km, left_key), memo(km, right_key)))
-        end
+    key = hash(formula(psi))
+    # Result is already computed
+    if _memo_kexist(km, key)
+        return
     end
+
+    left_key = hash(formula(leftchild(psi)))
+    right_key = hash(formula(rightchild(psi)))
+
+    setindex!(memo(km), token(psi)(memo(km, left_key), memo(km, right_key)), key)
 end
 
 function _process_node(km::KripkeModel, psi::Node)
+    # TODO:
     # When alphabets will be well-defined for each logic, use Traits here
     # "token(psi) in alphabet" -> "is_proposition(token(psi))"
     if token(psi) in alphabet
@@ -150,17 +187,26 @@ function _process_node(km::KripkeModel, psi::Node)
     end
 end
 
-function check(km::KripkeModel, formula::Formula)
+function check(km::KripkeModel, formula::Formula; max_size=Inf)
+    forget_list = Vector{Integer}()     # This is needed to regulate memoization
+
     # For each subformula in ascending order by size
     # evaluate L entry (hash(subformula), world) for each world.
     for psi in subformulas(formula.tree)
+        #= TODO: for some reason, this doesn't work.
+        if SoleLogics.size(psi) < max_size
+            push!(forget_list, hash(formula(psi)))
+        end
+        =#
         _process_node(km, psi)
     end
 
-    return memo(km)
-end
+    fcollection = memo(km)
 
-#=
-    provo le varie funzioni che accettano Φ ed 𝑀 (vedi tesi di Eduard)
-    for alg in algs
-=#
+    # memo regulation
+    for h in forget_list
+        pop!(memo(km), h)
+    end
+
+    return fcollection
+end
