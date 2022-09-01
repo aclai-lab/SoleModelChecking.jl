@@ -171,7 +171,13 @@ function _check_binary(
     left_key = hash(formula(leftchild(psi)))
     right_key = hash(formula(rightchild(psi)))
 
-    setindex!(memo(km), token(psi)(memo(km, left_key), memo(km, right_key)), key)
+    # Implication case is ad-hoc as it needs to know the
+    # universe were the two operands are placed
+    if typeof(token(psi)) == SoleLogics.BinaryOperator{:→}
+        setindex!(memo(km), IMPLICATION(worlds(km), memo(km, left_key), memo(km, right_key)), key)
+    else
+        setindex!(memo(km), token(psi)(memo(km, left_key), memo(km, right_key)), key)
+    end
 end
 
 function _process_node(km::KripkeModel, psi::Node)
@@ -187,23 +193,21 @@ function _process_node(km::KripkeModel, psi::Node)
     end
 end
 
-function check(km::KripkeModel, formula::Formula; max_size=Inf)
-    forget_list = Vector{Integer}()     # This is needed to regulate memoization
+function check(km::KripkeModel, fx::SoleLogics.Formula; max_size=Inf)
+    forget_list = Vector{Integer}()
 
-    # For each subformula in ascending order by size
-    # evaluate L entry (hash(subformula), world) for each world.
-    for psi in subformulas(formula.tree)
-        #= TODO: for some reason, this doesn't work.
-        if SoleLogics.size(psi) < max_size
+    for psi in subformulas(fx.tree)
+        if SoleLogics.size(psi) > max_size
             push!(forget_list, hash(formula(psi)))
         end
-        =#
+
         _process_node(km, psi)
     end
 
-    fcollection = memo(km)
-
-    # memo regulation
+    # Those are the worlds where a given formula is valid.
+    # After return them, memoization-regulation is applied
+    # to forget some formula and free space
+    fcollection = memo(km, fx.tree)
     for h in forget_list
         pop!(memo(km), h)
     end

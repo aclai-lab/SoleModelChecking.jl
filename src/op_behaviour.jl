@@ -21,8 +21,12 @@ SoleLogics.DISJUNCTION(a::Worlds{T}, b::Worlds{T}) where {T<:AbstractWorld} = Wo
 SoleLogics.DISJUNCTION(a::Set{T}, b::Set{T}) where {T<:AbstractWorld} = union(a,b)
 
 SoleLogics.IMPLICATION(a::Bool, b::Bool) = ifelse(a == true && b == false, false, true)
-SoleLogics.IMPLICATION(a::Worlds{T}, b::Worlds{T}) where {T<:AbstractWorld} = error("TODO Expand code")
-SoleLogics.IMPLICATION(a::Set{T}, b::Set{T}) where {T<:AbstractWorld} = error("TODO expand code")
+SoleLogics.IMPLICATION(universe::Worlds{T}, a::Worlds{T}, b::Worlds{T}) where {T<:AbstractWorld} = begin
+    return Worlds{T}(setdiff(universe, setdiff(a, CONJUNCTION(a,b))))
+end
+SoleLogics.IMPLICATION(universe::Worlds{T}, a::Set{T}, b::Set{T}) where {T<:AbstractWorld} = begin
+    return setdiff(Set(universe), setdiff(a, CONJUNCTION(a,b)))
+end
 
 # use traits here (is_abstract_modop, is_existential_modop)
 function dispatch_modop(
