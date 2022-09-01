@@ -16,10 +16,11 @@ export Worlds, Adjacents
 export KripkeModel, worlds, adjacents, evaluations
 export memo, contains, push!
 export check
+export experiments  # NOTE: this will be placed in a experiments.jl file
 
 # Generation
 export gen_formula
-export gnp, fanfan  #NOTE: this is for test purpose and will be removed later
+export gnp, fanfan  # NOTE: this is for test purpose and will be removed later
 export gen_kmodel
 
 @reexport using SoleLogics

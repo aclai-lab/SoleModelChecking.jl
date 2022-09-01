@@ -16,6 +16,7 @@
 
 ☐ Find a way to memoize "a DISJUNCTION b" with the same hash as "b  DISJUNCTION a"; 
     (call a normalization function before model checking, using is_commutative trait)
+    ☐ isless function 
 
 ☐ "formula" parameter in hashing could be removed 
     (just do hash(token(node))).

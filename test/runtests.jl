@@ -90,20 +90,20 @@ end
     L = check(km, formula)
     subf = subformulas(formula.tree)
 
-    s_hash = hash(SoleLogics.formula(subf[1]))
-    @test memo(km, s_hash) == Set{PointWorld}([worlds[3], worlds[4]])
+    s = subf[1]
+    @test memo(km, s) == Set{PointWorld}([worlds[3], worlds[4]])
 
-    r_hash = hash(SoleLogics.formula(subf[2]))
-    @test memo(km, r_hash) == Set{PointWorld}([worlds[2], worlds[5]])
+    r = subf[2]
+    @test memo(km, r) == Set{PointWorld}([worlds[2], worlds[5]])
 
-    nots_hash = hash(SoleLogics.formula(subf[3]))
-    @test memo(km, nots_hash) == Set{PointWorld}([worlds[1], worlds[2], worlds[5]])
+    nots = subf[3]
+    @test memo(km, nots) == Set{PointWorld}([worlds[1], worlds[2], worlds[5]])
 
-    and_hash = hash(SoleLogics.formula(subf[4]))
-    @test memo(km, and_hash) == Set{PointWorld}([worlds[2], worlds[5]])
+    and = subf[4]
+    @test memo(km, and) == Set{PointWorld}([worlds[2], worlds[5]])
 
-    formula_hash = hash(SoleLogics.formula(subf[5]))
-    @test memo(km, formula_hash) == Set{PointWorld}([worlds[1], worlds[3], worlds[4]])
+    formula = subf[5]
+    @test memo(km, formula) == Set{PointWorld}([worlds[1], worlds[3], worlds[4]])
 
     #  Formula to check: □(p ∨ (¬(◊r)))
     #
@@ -136,23 +136,23 @@ end
     L = check(km, formula)
     subf = subformulas(formula.tree)
 
-    p_hash = hash(SoleLogics.formula(subf[1]))
-    @test memo(km, p_hash) == Set{PointWorld}([worlds[3]])
+    p = subf[1]
+    @test memo(km, p) == Set{PointWorld}([worlds[3]])
 
-    r_hash = hash(SoleLogics.formula(subf[2]))
-    @test memo(km, r_hash) == Set{PointWorld}([worlds[1]])
+    r = subf[2]
+    @test memo(km, r) == Set{PointWorld}([worlds[1]])
 
-    dr_hash = hash(SoleLogics.formula(subf[3]))
-    @test memo(km, dr_hash) == Set{PointWorld}([worlds[2]])
+    dr = subf[3]
+    @test memo(km, dr) == Set{PointWorld}([worlds[2]])
 
-    ndr_hash = hash(SoleLogics.formula(subf[4]))
-    @test memo(km, ndr_hash) == Set{PointWorld}([worlds[1], worlds[3], worlds[4]])
+    ndr = subf[4]
+    @test memo(km, ndr) == Set{PointWorld}([worlds[1], worlds[3], worlds[4]])
 
-    por_hash = hash(SoleLogics.formula(subf[5]))
-    @test memo(km, por_hash) == Set{PointWorld}([worlds[1], worlds[3], worlds[4]])
+    por = subf[5]
+    @test memo(km, por) == Set{PointWorld}([worlds[1], worlds[3], worlds[4]])
 
-    formula_hash = hash(SoleLogics.formula(subf[6]))
-    @test memo(km, formula_hash) == Set{PointWorld}([worlds[2], worlds[4]])
+    formula = subf[6]
+    @test memo(km, formula) == Set{PointWorld}([worlds[2], worlds[4]])
 end
 
 @testset "Formula tree generation" begin

@@ -67,6 +67,9 @@ function _tree(tok, nodestack)
     end
 end
 
+# Dispatch to directly create a formula tree from a non-preprocessed string
+tree(expression::String) = tree(shunting_yard(expression))
+
 # Collect each node in a tree, then sort them by size.
 function subformulas(root::Node; sorted=true)
     nodes = Node[]
