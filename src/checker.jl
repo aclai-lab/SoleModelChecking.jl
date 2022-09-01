@@ -243,7 +243,7 @@ function _test_check(init_world::AbstractWorld, max_size::Integer)
 end
 
 # TODO: experiments.jl
-function experiments(𝑀::Vector{KripkeModel{T}}, Φ::Vector{SoleLogics.Formula}) where {T<:AbstractWorld}
+function test_mfmm(𝑀::Vector{KripkeModel{T}}, Φ::Vector{SoleLogics.Formula}) where {T<:AbstractWorld}
     memo_sizes = [1,2,4,6,8,10,12,14,16]
     init_world = PointWorld(1)
     algorithms = [_test_check(init_world, i) for i in memo_sizes]
@@ -280,5 +280,5 @@ end
     f4 = gen_formula(10)
     fxs = [f1, f2, f3, f4]
 
-    experiments(kms, fxs)
+    test_mfmm(kms, fxs)
 =#
