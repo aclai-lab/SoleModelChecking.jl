@@ -15,12 +15,12 @@ export tree, subformulas
 export Worlds, Adjacents
 export KripkeModel, worlds, adjacents, evaluations
 export memo, contains, push!
-export check
-export experiments  # NOTE: this will be placed in a experiments.jl file
+export check, _process_node # NOTE: _process_node should not be exported but is called from experiments.jl
+export test_mfmm  # NOTE: this is now in experiments.jl and will be removed from here
 
 # Generation
 export gen_formula
-export gnp, fanfan  # NOTE: this is for test purpose and will be removed later
+export gnp, fanfan  # NOTE: this is for REPL test purpose and will be removed from here
 export gen_kmodel
 
 @reexport using SoleLogics
