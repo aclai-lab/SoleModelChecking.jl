@@ -14,6 +14,7 @@
     ✓ Memoization regulation 
     ✓ Put everything togheter (see comments in `check`) #NOTE: experiments.jl
     ☐ Change Dict to Matrix in test_mfmm return value
+        ☐ Change Matrix to some 2D SLArray (https://github.com/SciML/LabelledArrays.jl)
     ☐ Find a trick to safely remove _process_node from exports without breaking the tests
 
 ☐ Find a way to memoize "a DISJUNCTION b" with the same hash as "b  DISJUNCTION a"; 

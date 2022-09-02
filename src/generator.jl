@@ -1,9 +1,3 @@
-# TODO: Prendo solo la logica -- ok
-# TODO: Usare un alias per Vector{String} -> StringAlphabet come fa Giovanni --- ok
-# TODO: change depth with height
-# TODO: add seed
-# TODO: add is_commutative trait -- ok
-
 ######################
 #      Formulas      #
 #     generation     #

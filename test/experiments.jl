@@ -49,10 +49,12 @@ function test_mfmm(
     algorithms = [_test_check(init_world, i) for i in memo_sizes]
 
     times = Vector{Float64}()
-    outcome = Dict{Tuple{KripkeModel, SoleLogics.Formula}, Bool}()
+    outcome = Array{Bool}(undef, length(𝑀), length(Φ))
 
     for alg in algorithms
         elapsed = zero(Float64)
+        #= Previous version,
+        where outcome is a Dict{Tuple{KripkeModel, SoleLogics.Formula}, Bool}()
         for km in 𝑀
             for ϕ in Φ
                 t, s = alg(km, ϕ)
@@ -60,6 +62,15 @@ function test_mfmm(
                 outcome[(km, ϕ)] = s
             end
             empty!(memo(km))
+        end
+        =#
+        for k in eachindex(𝑀)
+            for p in eachindex(Φ)
+                t, s = alg(𝑀[k], Φ[p])
+                elapsed = elapsed + t
+                outcome[k,p] = s
+            end
+            empty!(memo(𝑀[k]))
         end
         push!(times, elapsed/length(algorithms))
     end
@@ -83,4 +94,8 @@ end
 
     # Vector{Float} and Dictionary{Tuple{KripkeModel, Formula}, Bool}
     times, outcome = test_mfmm(kms, fxs, memo_sizes=memo_sizes, init_world=PointWorld(1))
+
+    # Add some test/scan here
+    @show times
+    @show outcome
 end
