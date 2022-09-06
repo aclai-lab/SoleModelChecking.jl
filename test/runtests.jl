@@ -89,15 +89,15 @@ end
 
     L = check(km, formula)
     subf = subformulas(formula.tree)
-    s = subf[1]
+    s = fhash(subf[1])
     @test memo(km, s) == Set{PointWorld}([worlds[3], worlds[4]])
-    r = subf[2]
+    r = fhash(subf[2])
     @test memo(km, r) == Set{PointWorld}([worlds[2], worlds[5]])
-    nots = subf[3]
+    nots = fhash(subf[3])
     @test memo(km, nots) == Set{PointWorld}([worlds[1], worlds[2], worlds[5]])
-    and = subf[4]
+    and = fhash(subf[4])
     @test memo(km, and) == Set{PointWorld}([worlds[2], worlds[5]])
-    formula = subf[5]
+    formula = fhash(subf[5])
     @test memo(km, formula) == Set{PointWorld}([worlds[1], worlds[3], worlds[4]])
 
     #  Formula to check: □(p ∨ (¬(◊r)))
@@ -131,17 +131,17 @@ end
     L = check(km, formula)
     subf = subformulas(formula.tree)
 
-    p = subf[1]
+    p = fhash(subf[1])
     @test memo(km, p) == Set{PointWorld}([worlds[3]])
-    r = subf[2]
+    r = fhash(subf[2])
     @test memo(km, r) == Set{PointWorld}([worlds[1]])
-    dr = subf[3]
+    dr = fhash(subf[3])
     @test memo(km, dr) == Set{PointWorld}([worlds[2]])
-    ndr = subf[4]
+    ndr = fhash(subf[4])
     @test memo(km, ndr) == Set{PointWorld}([worlds[1], worlds[3], worlds[4]])
-    por = subf[5]
+    por = fhash(subf[5])
     @test memo(km, por) == Set{PointWorld}([worlds[1], worlds[3], worlds[4]])
-    formula = subf[6]
+    formula = fhash(subf[6])
     @test memo(km, formula) == Set{PointWorld}([worlds[2], worlds[4]])
 end
 

@@ -110,35 +110,35 @@ end
 #################################
 #         Model Checking        #
 #################################
-function _check_alphabet(km::KripkeModel, psi::Node)
-    key = fhash(psi)
+function _check_alphabet(km::KripkeModel, ψ::Node)
+    key = fhash(ψ)
     # If current world is not associated to the subformula-hash, but it should, then do it.
     for w in worlds(km)
-        if !(w in values(memo(km, key))) && token(psi) in evaluations(km,w)
-            push!(km, fhash(psi), w)
+        if !(w in values(memo(km, key))) && token(ψ) in evaluations(km,w)
+            push!(km, fhash(ψ), w)
         end
     end
 end
 
-function _check_unary(km::KripkeModel, psi::Node)
-    @assert token(psi) in values(operators) "Error - $(token(psi)) is an invalid token"
-    key = fhash(psi)
+function _check_unary(km::KripkeModel, ψ::Node)
+    @assert token(ψ) in values(operators) "Error - $(token(ψ)) is an invalid token"
+    key = fhash(ψ)
 
     # Result is already computed
     if haskey(memo(km), key)
         return
     end
 
-    right_key = fhash(rightchild(psi))
+    right_key = fhash(rightchild(ψ))
 
     # Ad-hoc negation case
-    if typeof(token(psi)) == SoleLogics.UnaryOperator{:¬}
+    if typeof(token(ψ)) == SoleLogics.UnaryOperator{:¬}
         # NOTE: why is casting to MemoValueType needed here?
         setindex!(memo(km), MemoValueType{eltype(km)}(setdiff(worlds(km), memo(km, right_key))), key)
-    elseif is_modal_operator(token(psi))
+    elseif is_modal_operator(token(ψ))
         for w in worlds(km)
             # Consider w's neighbors
-            if dispatch_modop(token(psi), km, w, right_key)
+            if dispatch_modop(token(ψ), km, w, right_key)
                 push!(km, key, w)
             end
         end
@@ -147,52 +147,52 @@ function _check_unary(km::KripkeModel, psi::Node)
     end
 end
 
-function _check_binary(km::KripkeModel, psi::Node)
+function _check_binary(km::KripkeModel, ψ::Node)
     # TODO: `operators` collection has to be removed from parser.jl
-    @assert token(psi) in values(operators) "Error - $(token(psi)) is an invalid token"
-    key = fhash(psi)
+    @assert token(ψ) in values(operators) "Error - $(token(ψ)) is an invalid token"
+    key = fhash(ψ)
 
     # Result is already computed
     if haskey(memo(km), key)
         return
     end
 
-    left_key = fhash(leftchild(psi))
-    right_key = fhash(rightchild(psi))
+    left_key = fhash(leftchild(ψ))
+    right_key = fhash(rightchild(ψ))
 
     # Implication case is ad-hoc as it needs to know the
     # universe were the two operands are placed
-    if typeof(token(psi)) == SoleLogics.BinaryOperator{:→}
+    if typeof(token(ψ)) == SoleLogics.BinaryOperator{:→}
         setindex!(memo(km), IMPLICATION(worlds(km), memo(km, left_key), memo(km, right_key)), key)
     else
-        setindex!(memo(km), token(psi)(memo(km, left_key), memo(km, right_key)), key)
+        setindex!(memo(km), token(ψ)(memo(km, left_key), memo(km, right_key)), key)
     end
 end
 
-function _process_node(km::KripkeModel, psi::Node)
+function _process_node(km::KripkeModel, ψ::Node)
     # TODO:
     # When alphabets will be well-defined for each logic, use Traits here
-    # "token(psi) in alphabet" -> "is_proposition(token(psi))"
-    if token(psi) in alphabet
-        _check_alphabet(km, psi)
-    elseif is_unary_operator(token(psi))
-        _check_unary(km, psi)
-    elseif is_binary_operator(token(psi))
-        _check_binary(km, psi)
+    # "token(ψ) in alphabet" -> "is_proposition(token(ψ))"
+    if token(ψ) in alphabet
+        _check_alphabet(km, ψ)
+    elseif is_unary_operator(token(ψ))
+        _check_unary(km, ψ)
+    elseif is_binary_operator(token(ψ))
+        _check_binary(km, ψ)
     end
 end
 
-function check(km::KripkeModel, fx::SoleLogics.Formula; memo_depth=Inf)
+function check(km::KripkeModel, fx::SoleLogics.Formula; max_fheight_memo=Inf)
     forget_list = Vector{SoleLogics.Node}()
 
-    if !haskey(memo(km), fhash(psi))
-        for psi in subformulas(fx.tree)
-            if height(psi) > memo_depth
-                push!(forget_list, psi)
+    if !haskey(memo(km), fhash(fx.tree))
+        for ψ in subformulas(fx.tree)
+            if height(ψ) > max_fheight_memo
+                push!(forget_list, ψ)
             end
 
-            if !haskey(memo(km), fhash(psi))
-                _process_node(km, psi)
+            if !haskey(memo(km), fhash(ψ))
+                _process_node(km, ψ)
             end
         end
     end
@@ -215,11 +215,11 @@ end
 function check(
     𝑀::Vector{KripkeModel{T}},
     Φ::Vector{SoleLogics.Formula};
-    memo_depth = Inf
+    max_fheight_memo = Inf
 ) where {T<:AbstractWorld}
     for km in 𝑀
-        for ϕ in Φ
-            check(km, ϕ, memo_depth=memo_depth)
+        for φ in Φ
+            check(km, φ, max_fheight_memo=max_fheight_memo)
         end
     end
 end
