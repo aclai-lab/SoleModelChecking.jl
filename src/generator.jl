@@ -22,11 +22,7 @@ function gen_formula(
     return tree(_gen_formula(height, P, C, modal_depth=max_modepth))
 end
 
-function gen_formula(
-    height::Integer,
-    logic::AbstractLogic;
-    max_modepth::Integer = height
-)
+function gen_formula(height::Integer, logic::AbstractLogic; max_modepth::Integer = height)
     return tree(_gen_formula(height, SoleLogics.alphabet(logic), SoleLogics.operators(logic), modal_depth=max_modepth))
 end
 
@@ -127,7 +123,11 @@ function fanfan(n::Integer, id::Integer, od::Integer; threshold=0.5)
     return adjs
 end
 
-function _fanout(adjs::Adjacents{PointWorld}, od_queue::PriorityQueue{PointWorld, Int}, od::Integer)
+function _fanout(
+    adjs::Adjacents{PointWorld},
+    od_queue::PriorityQueue{PointWorld, Int},
+    od::Integer
+)
     #=
     Find the vertex v with the biggest difference between its out-degree and od.
     Create a random number of vertices between 1 and (od-m)
@@ -145,7 +145,12 @@ function _fanout(adjs::Adjacents{PointWorld}, od_queue::PriorityQueue{PointWorld
     end
 end
 
-function _fanin(adjs::Adjacents{PointWorld}, od_queue::PriorityQueue{PointWorld, Int}, id::Integer, od::Integer)
+function _fanin(
+    adjs::Adjacents{PointWorld},
+    od_queue::PriorityQueue{PointWorld, Int},
+    id::Integer,
+    od::Integer
+)
     #=
     Find the set S of all vertices that have out-degree < od.
     Compute a subset T of S of size at most id.
@@ -205,12 +210,7 @@ end
 # n has to be excluded (in fact it is already the first argument)
 # In other words this dispatch is not compatible with graph-generation functions whose
 # signature differs from fx(n, other_arguments...)
-function gen_kmodel(
-    n::Integer,
-    logic::AbstractLogic,
-    method::Symbol,
-    kwargs...
-)
+function gen_kmodel(n::Integer, logic::AbstractLogic, method::Symbol, kwargs...)
     if method == :fanin_fanout
         fx = fanfan
     elseif method == :erdos_renyi

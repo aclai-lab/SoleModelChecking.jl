@@ -13,13 +13,18 @@
     (Worlds, thus Vector{AbstractWorld}, and WorldsSet, thus Set{AbstractWorld})
     ✓ Memoization regulation 
     ✓ Put everything togheter (see comments in `check`) #NOTE: experiments.jl
-    ☐ Change Dict to Matrix in test_mfmm return value
+    ☐ Correctness check
+        ☐ Every check variant correctness was already tested, but now this has to be done neatly
         ☐ Change Matrix to some 2D SLArray (https://github.com/SciML/LabelledArrays.jl)
     ☐ Find a trick to safely remove _process_node from exports without breaking the tests
+    ☐ Clean plots!
+        ☐ experiments
+        ☐ fix @elapsed bug (first time mmcheck_experiment is run, compilation time is taken...)
+        ☐ tikz for julia
 
 ☐ Find a way to memoize "a DISJUNCTION b" with the same hash as "b  DISJUNCTION a"; 
     (call a normalization function before model checking, using is_commutative trait)
-    ☐ isless function 
+    ☐ thus, implement some `isless` function 
 
 ✓ "formula" parameter in hashing could be removed 
     (just do hash(token(node))).

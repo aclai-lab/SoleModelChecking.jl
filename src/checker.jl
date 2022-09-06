@@ -38,7 +38,7 @@ Base.show(io::IO, adj::Adjacents) = show(adj.adjacents)
 # This flexibility could be further extended
 const WorldsSet{T<:AbstractWorld} = Set{T}  # Write this in SoleWorlds, near Worlds wrapper
 const MemoValueType{T} = WorldsSet{T}
-const Memo{T} = Dict{SoleLogics.Node, MemoValueType{T}}
+const Memo{T} = Dict{UInt64, MemoValueType{T}}
 # const MemoValue{T} = Worlds{T}            <- a possible working alternative
 # const Memo{T} = Dict{Integer, Worlds{T}}   <-
 
@@ -82,28 +82,26 @@ Base.eltype(::Type{KripkeModel{T}}) where {T} = T
 #       utilities      #
 ########################
 memo(km::KripkeModel) = km.L
-_memo_kexist(km::KripkeModel, key) = haskey(memo(km), key)
-
 memo(km::KripkeModel, key) = begin
-    if _memo_kexist(km, key)
+    if haskey(memo(km), key)
         memo(km)[key]
     else
         MemoValueType{eltype(km)}([])
     end
 end
-memo(km::KripkeModel, key::Formula) = memo(km, key.tree)
+memo(km::KripkeModel, key::Formula) = memo(km, fhash(key.tree))
 
 # This setter is dangerous as it doesn't check if key exists in the memo structure
 # memo!(km::KripkeModel, key::Integer, val::MemoValueType) = km.L[key] = val # memo(km, key) = val
 
 contains(km::KripkeModel, key, value::AbstractWorld) = begin
-    (!_memo_kexist(km, key) || !(value in memo(km, key))) ? false : true
+    (!haskey(memo(km), key) || !(value in memo(km, key))) ? false : true
 end
 
 # If I try to insert in a non-allocated memory place,
 # i first reserve space to this new key.
 Base.push!(km::KripkeModel, key, val::AbstractWorld) = begin
-    if !_memo_kexist(km, key)
+    if !haskey(memo(km), key)
         setindex!(memo(km), MemoValueType{eltype(km)}([]), key)
     end
     push!(memo(km, key), val)
@@ -112,40 +110,36 @@ end
 #################################
 #         Model Checking        #
 #################################
-function _check_alphabet(
-    km::KripkeModel,
-    psi::Node
-)
+function _check_alphabet(km::KripkeModel, psi::Node)
+    key = fhash(psi)
     # If current world is not associated to the subformula-hash, but it should, then do it.
     for w in worlds(km)
-        if !(w in values(memo(km, psi))) && token(psi) in evaluations(km,w)
-            push!(km, psi, w)
+        if !(w in values(memo(km, key))) && token(psi) in evaluations(km,w)
+            push!(km, fhash(psi), w)
         end
     end
 end
 
-function _check_unary(
-    km::KripkeModel,
-    psi::Node,
-)
+function _check_unary(km::KripkeModel, psi::Node)
     @assert token(psi) in values(operators) "Error - $(token(psi)) is an invalid token"
+    key = fhash(psi)
 
     # Result is already computed
-    if _memo_kexist(km, psi)
+    if haskey(memo(km), key)
         return
     end
 
-    right_key = rightchild(psi)
+    right_key = fhash(rightchild(psi))
 
     # Ad-hoc negation case
     if typeof(token(psi)) == SoleLogics.UnaryOperator{:¬}
         # NOTE: why is casting to MemoValueType needed here?
-        setindex!(memo(km), MemoValueType{eltype(km)}(setdiff(worlds(km), memo(km, right_key))), psi)
+        setindex!(memo(km), MemoValueType{eltype(km)}(setdiff(worlds(km), memo(km, right_key))), key)
     elseif is_modal_operator(token(psi))
         for w in worlds(km)
             # Consider w's neighbors
             if dispatch_modop(token(psi), km, w, right_key)
-                push!(km, psi, w)
+                push!(km, key, w)
             end
         end
     else
@@ -153,27 +147,25 @@ function _check_unary(
     end
 end
 
-function _check_binary(
-    km::KripkeModel,
-    psi::Node
-)
+function _check_binary(km::KripkeModel, psi::Node)
     # TODO: `operators` collection has to be removed from parser.jl
     @assert token(psi) in values(operators) "Error - $(token(psi)) is an invalid token"
+    key = fhash(psi)
 
     # Result is already computed
-    if _memo_kexist(km, psi)
+    if haskey(memo(km), key)
         return
     end
 
-    left_key = leftchild(psi)
-    right_key = rightchild(psi)
+    left_key = fhash(leftchild(psi))
+    right_key = fhash(rightchild(psi))
 
     # Implication case is ad-hoc as it needs to know the
     # universe were the two operands are placed
     if typeof(token(psi)) == SoleLogics.BinaryOperator{:→}
-        setindex!(memo(km), IMPLICATION(worlds(km), memo(km, left_key), memo(km, right_key)), psi)
+        setindex!(memo(km), IMPLICATION(worlds(km), memo(km, left_key), memo(km, right_key)), key)
     else
-        setindex!(memo(km), token(psi)(memo(km, left_key), memo(km, right_key)), psi)
+        setindex!(memo(km), token(psi)(memo(km, left_key), memo(km, right_key)), key)
     end
 end
 
@@ -190,25 +182,44 @@ function _process_node(km::KripkeModel, psi::Node)
     end
 end
 
-function check(km::KripkeModel, fx::SoleLogics.Formula; max_size=Inf)
+function check(km::KripkeModel, fx::SoleLogics.Formula; memo_depth=Inf)
     forget_list = Vector{SoleLogics.Node}()
 
-    for psi in subformulas(fx.tree)
-        if SoleLogics.size(psi) > max_size
-            push!(forget_list, psi)
-        end
+    if !haskey(memo(km), fhash(psi))
+        for psi in subformulas(fx.tree)
+            if height(psi) > memo_depth
+                push!(forget_list, psi)
+            end
 
-        _process_node(km, psi)
+            if !haskey(memo(km), fhash(psi))
+                _process_node(km, psi)
+            end
+        end
     end
 
-    # Those are the worlds where a given formula is valid.
-    # After return them, memoization-regulation is applied
-    # to forget some formula and free space
-    fcollection = memo(km, fx)
+    # All the worlds where a given formula is valid are returned.
+    # Then, internaly, memoization-regulation is applied
+    # to forget some formula thus freeing space.
+    fcollection = memo(km)
     for h in forget_list
-        empty!(memo(km,h))
-        pop!(memo(km), h)
+        k = fhash(h)
+        if haskey(memo(km),k)
+            empty!(memo(km, k)) # Collection at memo(km)[k] is erased
+            pop!(memo(km),k)    # Key k is deallocated too
+        end
     end
 
     return fcollection
+end
+
+function check(
+    𝑀::Vector{KripkeModel{T}},
+    Φ::Vector{SoleLogics.Formula};
+    memo_depth = Inf
+) where {T<:AbstractWorld}
+    for km in 𝑀
+        for ϕ in Φ
+            check(km, ϕ, memo_depth=memo_depth)
+        end
+    end
 end

@@ -33,7 +33,7 @@ function dispatch_modop(
     token::T,
     km::KripkeModel{WT},
     w::WT,
-    phi::SoleLogics.Node
+    phi::UInt64
 ) where {
     T<:AbstractModalOperator,
     WT<:AbstractWorld

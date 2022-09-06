@@ -5,7 +5,7 @@ using StatsBase
 using Random
 using Reexport
 
-using GraphPlot
+# using GraphPlot
 
 # Formula tree
 export shunting_yard
@@ -15,8 +15,11 @@ export tree, subformulas
 export Worlds, Adjacents
 export KripkeModel, worlds, adjacents, evaluations
 export memo, contains, push!
-export check, _process_node # NOTE: _process_node should not be exported but is called from experiments.jl
-export test_mfmm  # NOTE: this is now in experiments.jl and will be removed from here
+export check
+
+# NOTE: _process_node should not be exported but is called from experiments.jl;
+# in the latter file, writing include("../src/checker.jl") doesn't work and throws an error.
+export _process_node
 
 # Generation
 export gen_formula
