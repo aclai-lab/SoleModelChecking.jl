@@ -17,9 +17,14 @@
         ☐ Every check variant correctness was already tested, but now this has to be done neatly
         ☐ Change Matrix to some 2D SLArray (https://github.com/SciML/LabelledArrays.jl)
     ☐ Find a trick to safely remove _process_node from exports without breaking the tests
+    ☐ Parallelize where possible (https://docs.julialang.org/en/v1/manual/multi-threading/)
+        "Base collection types require manual locking if used simultaneously by multiple 
+        threads where at least one thread modifies the collection 
+        (common examples include push! on arrays, or inserting items into a Dict)."
     ☐ Clean plots!
         ☐ experiments
-        ☐ fix @elapsed bug (first time mmcheck_experiment is run, compilation time is taken...)
+        ✓ fix @elapsed bug (first time mmcheck_experiment is run, compilation time is taken...)
+            see __force_compilation__
         ☐ tikz for julia
 
 ☐ Find a way to memoize "a DISJUNCTION b" with the same hash as "b  DISJUNCTION a"; 

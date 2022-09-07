@@ -112,7 +112,7 @@ function fanfan(n::Integer, id::Integer, od::Integer; threshold=0.5)
 
     od_queue = PriorityQueue{PointWorld, Int64}(PointWorld(0) => 0)
 
-    while length(adjs.adjacents) <= n
+    while length(adjs.adjacents) < n
         if rand() <= threshold
             _fanout(adjs, od_queue, od)
         else

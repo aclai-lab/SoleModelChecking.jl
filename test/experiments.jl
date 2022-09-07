@@ -48,10 +48,8 @@ function mmcheck_experiment(
         for i in 1:fnumbers
             push!(current_times, _mmcheck_experiment(𝑀, fheight, fheight_memo[m], rng, reps))
         end
-
         # current_times are copied in the collection wich will be returned
         times[m,:] = current_times[:]
-
         # memoization is completely cleaned up; this way next iterations can't cheat
         for km in 𝑀
             empty!(memo(km))
@@ -68,10 +66,12 @@ function mmcheck_experiment(
     end
     display(plt1)
 
-    # level of memoization
+    # level of memoization vs time
+    #=
     plt2 = plot()
     plot!(plt2, fheight_memo[:], [cumsum(times[row,:])[fnumbers] for row in 1:length(fheight_memo)])
     display(plt2)
+    =#
 
     return times
 end
@@ -89,12 +89,13 @@ function _mmcheck_experiment(
     elapsed = zero(Float64)
 
     for km in 𝑀
-        total_time = zero(Float64)
+        total_time = zero(Float64) # total_time = Threads.Atomic{Float64}(zero(Float64))
+        #Threads.@threads
         for _ in 1:reps
             t = _timed_check_experiment(km, gen_formula(fheight), max_size=memo_fheight)
-            total_time = total_time + t
+            total_time = total_time + t # Threads.atomic_add!(total_time, t)
         end
-        elapsed = elapsed + total_time/reps
+        elapsed = elapsed + total_time[]/reps
     end
 
     return elapsed

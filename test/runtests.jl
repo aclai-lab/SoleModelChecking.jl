@@ -2,7 +2,7 @@ using SoleModelChecking
 using Test
 using Random
 
-@testset "Shunting yard and formula tree" begin
+@testset "Shunting Yard and Formula Tree" begin
     # Formula tree testing is further explained in "Formula tree generation" testset
 
     #          ∨
@@ -53,8 +53,7 @@ using Random
     @test inorder(f3.tree) == "(((p)∧(q))∧(((r)∧(s))∧(◊(t))))"
 end
 
-@testset "Checker" begin
-
+@testset "Model Checking" begin
     #  Formula to check: ◊(¬(s)∧(r))
     #
     #  p,q,r
@@ -146,7 +145,6 @@ end
 end
 
 @testset "Formula tree generation" begin
-
     function fxtest_general(height::Integer)
         formula = gen_formula(height)
         @test SoleLogics.height(formula.tree) == height
@@ -169,10 +167,42 @@ end
         fxtest_general(i)
         fxtest_modal(i, i-rand(1:i))
     end
-
 end
 
 @testset "Model generation" begin
+    # Given a kripke model, test if it's worlds input and output degrees are lower than a certain threshold
+    function graphtest_degrees(
+        km::KripkeModel{T},
+        n::Integer,
+        max_in::Integer,
+        max_out::Integer
+    ) where {T<:AbstractWorld}
+        @test length(keys(adjacents(km))) == n
 
+        # Foreach world its Out Degree is tested foreach world;
+        # the numbers of entering edges are regrouped in in_degrees to test In degree later
+        in_degrees = Dict{T,Int64}()
+        for world in keys(adjacents(km))
+            @test length(adjacents(km, world)) <= max_out
+            for neighbor in adjacents(km,world)
+                if !haskey(in_degrees, neighbor)
+                    in_degrees[neighbor] = 0
+                end
+                in_degrees[neighbor] = in_degrees[neighbor] + 1
+            end
+        end
 
+        # In Degree is tested
+        for in_degree in values(in_degrees)
+            @test in_degree <= max_in
+        end
+    end
+
+    for i in 1:30
+        n = 10 * i
+        in_degree = rand(1:i)
+        out_degree = rand(1:i)
+        km = gen_kmodel(n, MODAL_LOGIC, :fanin_fanout, in_degree, out_degree)
+        graphtest_degrees(km, n, in_degree, out_degree)
+    end
 end
