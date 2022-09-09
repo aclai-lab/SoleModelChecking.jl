@@ -40,7 +40,7 @@ const WorldsSet{T<:AbstractWorld} = Set{T}  # Write this in SoleWorlds, near Wor
 const MemoValueType{T} = WorldsSet{T}
 const Memo{T} = Dict{UInt64, MemoValueType{T}}
 # const MemoValue{T} = Worlds{T}            <- a possible working alternative
-# const Memo{T} = Dict{Integer, Worlds{T}}   <-
+# const Memo{T} = Dict{Integer, Worlds{T}}  <-
 
 struct KripkeModel{T<:AbstractWorld}
     worlds::Worlds{T}                    # worlds in the model
@@ -112,10 +112,18 @@ end
 #################################
 function _check_alphabet(km::KripkeModel, ψ::Node)
     key = fhash(ψ)
-    # If current world is not associated to the subformula-hash, but it should, then do it.
+
     for w in worlds(km)
-        if !(w in values(memo(km, key))) && token(ψ) in evaluations(km,w)
-            push!(km, fhash(ψ), w)
+        # memo
+        if w in values(memo(km, key))
+            continue
+        # new entry
+        elseif token(ψ) in evaluations(km,w)
+            push!(km, key, w)
+        # no world
+        elseif !haskey(memo(km), key)
+            # TODO: should be generalized to WorldsSet or MemoValueType
+            setindex!(memo(km), MemoValueType{eltype(km)}([]), key)
         end
     end
 end
@@ -127,6 +135,8 @@ function _check_unary(km::KripkeModel, ψ::Node)
     # Result is already computed
     if haskey(memo(km), key)
         return
+     else
+        setindex!(memo(km), MemoValueType{eltype(km)}([]), key)
     end
 
     right_key = fhash(rightchild(ψ))
@@ -198,9 +208,9 @@ function check(km::KripkeModel, fx::SoleLogics.Formula; max_fheight_memo=Inf)
     end
 
     # All the worlds where a given formula is valid are returned.
-    # Then, internaly, memoization-regulation is applied
+    # Then, internally, memoization-regulation is applied
     # to forget some formula thus freeing space.
-    fcollection = memo(km)
+    fcollection = deepcopy(memo(km))
     for h in forget_list
         k = fhash(h)
         if haskey(memo(km),k)
@@ -222,4 +232,26 @@ function check(
             check(km, φ, max_fheight_memo=max_fheight_memo)
         end
     end
+end
+
+# This overload also returns a matrix 𝑀 x Φ, containing whether
+# a certain formula φᵢ is satisfied on 𝑚's initial world
+# considering a certain max-memoization threshold.
+function check(
+    𝑀::Vector{KripkeModel{T}},
+    Φ::Vector{SoleLogics.Formula},
+    iw::T;
+    max_fheight_memo = Inf
+) where {T<:AbstractWorld}
+    outcomes = Matrix{Bool}(undef, length(𝑀), length(Φ))
+
+    for 𝑚 in eachindex(𝑀)
+        for φ in eachindex(Φ)
+            #chottenuto = check(𝑀[𝑚], Φ[φ], max_fheight_memo=max_fheight_memo)
+            #println("provo la chiave di $(Φ[φ].tree) , $(fhash(Φ[φ].tree)), $(SoleLogics.height(Φ[φ].tree))")
+            outcomes[𝑚,φ] = (iw in check(𝑀[𝑚], Φ[φ], max_fheight_memo=max_fheight_memo)[fhash(Φ[φ].tree)])
+        end
+    end
+
+    return outcomes
 end

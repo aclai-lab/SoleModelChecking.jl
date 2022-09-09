@@ -33,8 +33,8 @@ function mmcheck_experiment(
     fnumbers::Integer,
     fheight::Integer,
     fheight_memo::Vector{<:Number};
-    rng::Integer = 1337,
-    reps::Integer = 1
+    reps::Integer = 1,
+    rng::Integer = 1337
 ) where {T<:AbstractWorld}
     __force_compilation__()
 
@@ -135,7 +135,11 @@ function _timed_check_experiment(
     return t
 end
 
-Random.seed!(1337)
+rng = 1337
+Random.seed!(rng)
+kms = [gen_kmodel(10, rand(1:rand(1:5)), rand(1:rand(1:5)), P=letters) for _ in 1:10]
+letters = LetterAlphabet(["p1", "p2", "p3"])
+times = mmcheck_experiment(kms, 1000, 3, [0,1,2,3], reps=10, rng=rng)
+
 # kms = [gen_kmodel(50, ["p1", "p2", "p3", "p4", "p5", "p6", "p7"], :fanin_fanout, rand(1:rand(1:50)), rand(1:rand(1:50))) for _ in 1:10]
-kms = [gen_kmodel(50, rand(1:rand(1:50)), rand(1:rand(1:50))) for _ in 1:10]
-times = mmcheck_experiment(kms, 1000, 5, [0,1,2,3,Inf], reps=50)
+# kms = [gen_kmodel(10, rand(1:rand(1:5)), rand(1:rand(1:5))) for _ in 1:10]
