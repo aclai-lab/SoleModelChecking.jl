@@ -26,6 +26,7 @@
         ✓ fix @elapsed bug (first time mmcheck_experiment is run, compilation time is taken...)
             see __force_compilation__
         ☐ tikz for julia
+    ☐ Get rid of boring precompilation times as much as possible (https://julialang.org/blog/2021/01/precompile_tutorial/)
 
 ☐ Find a way to memoize "a DISJUNCTION b" with the same hash as "b  DISJUNCTION a"; 
     (call a normalization function before model checking, using is_commutative trait)

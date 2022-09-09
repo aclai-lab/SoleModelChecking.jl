@@ -16,10 +16,11 @@ using CPUTime
 # The purpose of this function is to force julia to compile all the functions
 # involved in the process of testing mmcheck.
 # This is must be called once before measuring times.
+# Also, this is the ugliest thing I have ever written and should be changed
 function __force_compilation__()
     kms = [gen_kmodel(30, 5, 5) for _ in 1:10]
-    for _ in 1:500
-        _mmcheck_experiment(kms, 10, 9999, 1337, 10)
+    for _ in 1:10
+        _mmcheck_experiment(kms, 10, 9999)
     end
 end
 
@@ -40,29 +41,37 @@ function mmcheck_experiment(
     # all the different memoization levels are converted to integers
     fheight_memo = [m == Inf ? fheight : convert(Int64, m) for m in fheight_memo]
 
-    times = Matrix{Float64}(undef, (length(fheight_memo), fnumbers))
+    times = fill(zero(Float64), length(fheight_memo), fnumbers)
 
-    for m in eachindex(fheight_memo)
-        # `fnumbers` model checkings are called, keeping memoization among calls
-        current_times = Float64[]
-        for i in 1:fnumbers
-            push!(current_times, _mmcheck_experiment(𝑀, fheight, fheight_memo[m], rng, reps))
-        end
-        # current_times are copied in the collection wich will be returned
-        times[m,:] = current_times[:]
-        # memoization is completely cleaned up; this way next iterations can't cheat
-        for km in 𝑀
-            empty!(memo(km))
+    for _ in 1:reps
+        for m in eachindex(fheight_memo)
+            # seed is set, then it's increased to guarantee more variability in the future
+            Random.seed!(rng)
+            rng = rng + 1
+
+            # `fnumbers` model checkings are called, keeping memoization among calls
+            current_times = Float64[]
+            for i in 1:fnumbers
+                push!(current_times, _mmcheck_experiment(𝑀, fheight, fheight_memo[m]))
+            end
+
+            # current_times are additioned in the collection wich will be returned
+            times[m,:] = times[m,:] + current_times[:]
+
+            # memoization is completely cleaned up; this way next iterations will not cheat
+            for km in 𝑀
+                empty!(memo(km))
+            end
         end
     end
+    # mean times
+    times = times ./ reps
 
     # for each requested memo_fheight, a line is plotted
-    labels=["a", "b", "c","d","e","f","g"]
-
     # number of formulas vs time
     plt1 = plot()
     for m in eachindex(fheight_memo)
-        plot!(plt1, 1:fnumbers, cumsum(times[m,:]), labels=labels[m], legend=:topleft)
+        plot!(plt1, 1:fnumbers, cumsum(times[m,:]), labels="memo: $(fheight_memo[m])", legend=:topleft)
     end
     display(plt1)
 
@@ -81,21 +90,13 @@ end
 function _mmcheck_experiment(
     𝑀::Vector{KripkeModel{T}},
     fheight::Integer,
-    memo_fheight::Integer,
-    rng::Integer,
-    reps::Integer
+    memo_fheight::Integer
 ) where {T<:AbstractWorld}
-    Random.seed!(rng)
     elapsed = zero(Float64)
 
     for km in 𝑀
-        total_time = zero(Float64) # total_time = Threads.Atomic{Float64}(zero(Float64))
-        #Threads.@threads
-        for _ in 1:reps
-            t = _timed_check_experiment(km, gen_formula(fheight), max_size=memo_fheight)
-            total_time = total_time + t # Threads.atomic_add!(total_time, t)
-        end
-        elapsed = elapsed + total_time[]/reps
+        t = _timed_check_experiment(km, gen_formula(fheight), max_height=memo_fheight)
+        elapsed = elapsed + t
     end
 
     return elapsed
@@ -104,21 +105,24 @@ end
 # Timed model checking. Return a pair containing the elapsed time
 # and a boolean (representing if fx is valid on init_world).
 # The latter can be used to test check correctness.
-function _timed_check_experiment(km::KripkeModel, fx::SoleLogics.Formula; init_world=PointWorld(1), max_size=Inf)
+function _timed_check_experiment(
+    km::KripkeModel,
+    fx::SoleLogics.Formula;
+    init_world=PointWorld(1),
+    max_height=Inf
+)
     forget_list = Vector{SoleLogics.Node}()
     t = zero(Float64)
 
-    if !haskey(memo(km), fhash(fx.tree))
+    if !haskey(memo(km), fhash(fx.tree))    # TODO: this check should be timed too
         for psi in subformulas(fx.tree)
-            if height(psi) > max_size
+            if height(psi) > max_height
                 push!(forget_list, psi)
             end
             t = t + @CPUelapsed if haskey(memo(km), fhash(psi)) continue end
             t = t + @CPUelapsed (_process_node(km, psi))
         end
     end
-
-    t = t + @CPUelapsed (s = init_world in memo(km, fx))
 
     for h in forget_list
         k = fhash(h)
@@ -131,23 +135,7 @@ function _timed_check_experiment(km::KripkeModel, fx::SoleLogics.Formula; init_w
     return t
 end
 
-kms = [gen_kmodel(20, rand(1:rand(1:20)), rand(1:rand(1:20))) for _ in 1:50]
-times = mmcheck_experiment(kms, 100, 5, [0,1,2,3,4,Inf], reps=10)
-
-#=
-times = Matrix{Float64}(undef, (2, 5))
-times[1,:] = [1,2,3,4,5]
-times[2,:] = [6,7,8,9,10]
-=#
-
-#=
-open("results.txt", "w") do file
-    for row in 1:6
-        write(file, "$row: ")
-        for columns in 1:1000
-            write(file, "$(times[row,columns]) ")
-        end
-        write(file, "\n")
-    end
-end
-=#
+Random.seed!(1337)
+# kms = [gen_kmodel(50, ["p1", "p2", "p3", "p4", "p5", "p6", "p7"], :fanin_fanout, rand(1:rand(1:50)), rand(1:rand(1:50))) for _ in 1:10]
+kms = [gen_kmodel(50, rand(1:rand(1:50)), rand(1:rand(1:50))) for _ in 1:10]
+times = mmcheck_experiment(kms, 1000, 5, [0,1,2,3,Inf], reps=50)

@@ -177,7 +177,7 @@ end
         max_in::Integer,
         max_out::Integer
     ) where {T<:AbstractWorld}
-        @test length(keys(adjacents(km))) == n
+        @test length(keys(adjacents(km)))-1 == n    # should be without -1
 
         # Foreach world its Out Degree is tested foreach world;
         # the numbers of entering edges are regrouped in in_degrees to test In degree later

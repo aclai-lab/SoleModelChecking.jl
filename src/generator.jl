@@ -112,7 +112,7 @@ function fanfan(n::Integer, id::Integer, od::Integer; threshold=0.5)
 
     od_queue = PriorityQueue{PointWorld, Int64}(PointWorld(0) => 0)
 
-    while length(adjs.adjacents) < n
+    while length(adjs.adjacents) <= n
         if rand() <= threshold
             _fanout(adjs, od_queue, od)
         else
@@ -177,7 +177,7 @@ function dispense_alphabet(
     evals = Dict{T, LetterAlphabet}()
     n = length(ws)
     for w in ws
-        evals[w] = sample(P, rand(1:length(P)), replace=false)
+        evals[w] = sample(P, rand(0:length(P)), replace=false)
     end
     return evals
 end
@@ -210,7 +210,7 @@ end
 # n has to be excluded (in fact it is already the first argument)
 # In other words this dispatch is not compatible with graph-generation functions whose
 # signature differs from fx(n, other_arguments...)
-function gen_kmodel(n::Integer, logic::AbstractLogic, method::Symbol, kwargs...)
+function gen_kmodel(n::Integer, P::LetterAlphabet, method::Symbol, kwargs...)
     if method == :fanin_fanout
         fx = fanfan
     elseif method == :erdos_renyi
@@ -219,9 +219,9 @@ function gen_kmodel(n::Integer, logic::AbstractLogic, method::Symbol, kwargs...)
         error("Invalid method provided: $method. Refer to the docs <add link here>")
     end
 
+    ws = Worlds{PointWorld}(world_gen(n))
     adjs = fx(n, kwargs...)
-    ws = Worlds{PointWorld}(world_gen(length(adjs)))
-    evs = dispense_alphabet(ws, P=SoleLogics.alphabet(logic))
+    evs = dispense_alphabet(ws, P=P)
     return KripkeModel{PointWorld}(ws, adjs, evs)
 end
 
