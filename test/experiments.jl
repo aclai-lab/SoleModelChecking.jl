@@ -68,16 +68,16 @@ function mmcheck_experiment(
     # mean times
     times = times ./ reps
 
+    fpath = "./test/plots/"
     # for each requested memo_fheight, a line is plotted
     # number of formulas vs time
     plt1 = plot()
     for m in eachindex(fheight_memo)
         plot!(plt1, 1:fnumbers, cumsum(times[m,:]), labels="memo: $(fheight_memo[m])", legend=:topleft)
     end
-    display(plt1)
+    savefig(plt1, fpath*"$(fnumbers)_$(fheight).png")
 
-    # level of memoization vs time
-    #=
+    #= level of memoization vs time
     plt2 = plot()
     plot!(plt2, fheight_memo[:], [cumsum(times[row,:])[fnumbers] for row in 1:length(fheight_memo)])
     display(plt2)
@@ -140,6 +140,4 @@ rng = 1337
 Random.seed!(rng)
 letters = LetterAlphabet(["p", "q", "r"])
 kms = [gen_kmodel(50, rand(1:rand(1:5)), rand(1:rand(1:5)), P=letters) for _ in 1:10]
-#times = mmcheck_experiment(kms, 3996, 3, [0,3], reps=10, rng=rng)
-times = mmcheck_experiment(kms, 700, 3, [0,1,2,3], P=letters, reps=10, rng=rng)
-# kms = [gen_kmodel(10, rand(1:rand(1:5)), rand(1:rand(1:5))) for _ in 1:10]
+times = mmcheck_experiment(kms, 100, 3, [0,3], P=letters, reps=10, rng=rng)
