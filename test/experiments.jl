@@ -33,6 +33,7 @@ function mmcheck_experiment(
     fnumbers::Integer,
     fheight::Integer,
     fheight_memo::Vector{<:Number};
+    P = SoleLogics.alphabet(MODAL_LOGIC),
     reps::Integer = 1,
     rng::Integer = 1337
 ) where {T<:AbstractWorld}
@@ -52,7 +53,7 @@ function mmcheck_experiment(
             # `fnumbers` model checkings are called, keeping memoization among calls
             current_times = Float64[]
             for i in 1:fnumbers
-                push!(current_times, _mmcheck_experiment(𝑀, fheight, fheight_memo[m]))
+                push!(current_times, _mmcheck_experiment(𝑀, fheight, fheight_memo[m], P=P))
             end
 
             # current_times are additioned in the collection wich will be returned
@@ -90,12 +91,13 @@ end
 function _mmcheck_experiment(
     𝑀::Vector{KripkeModel{T}},
     fheight::Integer,
-    memo_fheight::Integer
+    memo_fheight::Integer;
+    P = SoleLogics.alphabet(MODAL_LOGIC)
 ) where {T<:AbstractWorld}
     elapsed = zero(Float64)
 
     for km in 𝑀
-        t = _timed_check_experiment(km, gen_formula(fheight), max_height=memo_fheight)
+        t = _timed_check_experiment(km, gen_formula(fheight, P=P), max_height=memo_fheight)
         elapsed = elapsed + t
     end
 
@@ -108,7 +110,6 @@ end
 function _timed_check_experiment(
     km::KripkeModel,
     fx::SoleLogics.Formula;
-    init_world=PointWorld(1),
     max_height=Inf
 )
     forget_list = Vector{SoleLogics.Node}()
@@ -137,9 +138,8 @@ end
 
 rng = 1337
 Random.seed!(rng)
-kms = [gen_kmodel(10, rand(1:rand(1:5)), rand(1:rand(1:5)), P=letters) for _ in 1:10]
-letters = LetterAlphabet(["p1", "p2", "p3"])
-times = mmcheck_experiment(kms, 1000, 3, [0,1,2,3], reps=10, rng=rng)
-
-# kms = [gen_kmodel(50, ["p1", "p2", "p3", "p4", "p5", "p6", "p7"], :fanin_fanout, rand(1:rand(1:50)), rand(1:rand(1:50))) for _ in 1:10]
+letters = LetterAlphabet(["p", "q", "r"])
+kms = [gen_kmodel(50, rand(1:rand(1:5)), rand(1:rand(1:5)), P=letters) for _ in 1:10]
+#times = mmcheck_experiment(kms, 3996, 3, [0,3], reps=10, rng=rng)
+times = mmcheck_experiment(kms, 700, 3, [0,1,2,3], P=letters, reps=10, rng=rng)
 # kms = [gen_kmodel(10, rand(1:rand(1:5)), rand(1:rand(1:5))) for _ in 1:10]

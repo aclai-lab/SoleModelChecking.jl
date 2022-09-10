@@ -46,16 +46,16 @@ struct KripkeModel{T<:AbstractWorld}
     worlds::Worlds{T}                    # worlds in the model
     adjacents::Adjacents{T}              # neighbors of a given world
     evaluations::Dict{T, LetterAlphabet} # list of prop. letters satisfied by a world
-
+    logic::AbstractLogic                 # logic associated with this model
     L::Memo{T}                           # memoization collection associated with this model
 
     function KripkeModel{T}() where {T<:AbstractWorld}
         worlds = Worlds{T}([])
         adjacents = Dict{T, Worlds{T}}([])
         evaluations = Dict{T, Vector{String}}()
+        logic = SoleLogics.MODAL_LOGIC
         L = Memo{T}()
-
-        return new{T}(worlds, adjacents, evaluations, L)
+        return new{T}(worlds, adjacents, evaluations, L, logic)
     end
 
     function KripkeModel{T}(
@@ -63,8 +63,9 @@ struct KripkeModel{T<:AbstractWorld}
         adjacents::Adjacents{T},
         evaluations::Dict{T, Vector{String}}
     ) where {T<:AbstractWorld}
+        logic = SoleLogics.MODAL_LOGIC
         L = Memo{T}()
-        return new{T}(worlds, adjacents, evaluations, L)
+        return new{T}(worlds, adjacents, evaluations, logic, L)
     end
 end
 worlds(km::KripkeModel) = km.worlds
@@ -74,6 +75,8 @@ adjacents(km::KripkeModel, w::AbstractWorld) = km.adjacents[w]
 
 evaluations(km::KripkeModel) = km.evaluations
 evaluations(km::KripkeModel, w::AbstractWorld) = km.evaluations[w]
+
+logic(km::KripkeModel) = km.logic
 
 Base.eltype(::Type{KripkeModel{T}}) where {T} = T
 
@@ -129,7 +132,7 @@ function _check_alphabet(km::KripkeModel, ψ::Node)
 end
 
 function _check_unary(km::KripkeModel, ψ::Node)
-    @assert token(ψ) in values(operators) "Error - $(token(ψ)) is an invalid token"
+    @assert token(ψ) in SoleLogics.operators(logic(km)) "Error - $(token(ψ)) is an invalid token"
     key = fhash(ψ)
 
     # Result is already computed
@@ -158,8 +161,7 @@ function _check_unary(km::KripkeModel, ψ::Node)
 end
 
 function _check_binary(km::KripkeModel, ψ::Node)
-    # TODO: `operators` collection has to be removed from parser.jl
-    @assert token(ψ) in values(operators) "Error - $(token(ψ)) is an invalid token"
+    @assert token(ψ) in SoleLogics.operators(logic(km)) "Error - $(token(ψ)) is an invalid token"
     key = fhash(ψ)
 
     # Result is already computed
@@ -180,10 +182,8 @@ function _check_binary(km::KripkeModel, ψ::Node)
 end
 
 function _process_node(km::KripkeModel, ψ::Node)
-    # TODO:
-    # When alphabets will be well-defined for each logic, use Traits here
-    # "token(ψ) in alphabet" -> "is_proposition(token(ψ))"
-    if token(ψ) in alphabet
+    #TODO: use is_proposition(token(ψ)) here
+    if token(ψ) in SoleLogics.alphabet(MODAL_LOGIC)
         _check_alphabet(km, ψ)
     elseif is_unary_operator(token(ψ))
         _check_unary(km, ψ)

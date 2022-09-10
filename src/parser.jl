@@ -3,19 +3,6 @@
 #          section        #
 ###########################
 
-# What is contained in this section is just temporary code that has to be
-# expanded/moved/removed after implementative decisions.
-# At the moment, this is just a support for let a toy Model Checker run.
-
-alphabet = SoleLogics.alphabet(MODAL_LOGIC)
-
-# Given a symbol check if it's associated with an operator.
-# This is useful to check if an expression is malformed.
-const operators = Dict{Symbol,AbstractOperator}()
-for op in SoleLogics.operators(MODAL_LOGIC)
-    operators[Symbol(op)] = op
-end
-
 const operators_precedence = Dict{Union{AbstractOperator,Symbol}, Int}(
     :¬ => 30,
     Symbol("◊") => 20,
@@ -30,8 +17,13 @@ precedence(op::Union{AbstractOperator, String}) = operators_precedence[Symbol(op
 
 
 # A simple lexer capable of distinguish operators in a string
-function tokenizer(expression::String)
+function tokenizer(expression::String; ops=operators(MODAL_LOGIC))
     tokens = Union{AbstractOperator, String}[]
+
+    sym_to_op = Dict{Symbol,AbstractOperator}()
+    for op in ops
+        sym_to_op[Symbol(op)] = op
+    end
 
     # Classical operators such as ∧ are represented by one character
     # but "expression" is splitted (after whitespaces removal) in order to
@@ -43,7 +35,7 @@ function tokenizer(expression::String)
     # while the rest of the expression is expanded.
     for slice in slices
         if slice[1] == '[' || slice[1] == '⟨'
-            push!(tokens, operators[Symbol(slice)])
+            push!(tokens, sym_to_op[Symbol(slice)])
         else
             append!(tokens, string.(split(slice, "")))
         end
@@ -51,8 +43,8 @@ function tokenizer(expression::String)
 
     # Other operators are recognized
     for i in eachindex(tokens)
-        if tokens[i] isa String && haskey(operators, Symbol(tokens[i]))
-            tokens[i] = operators[Symbol(tokens[i])]
+        if tokens[i] isa String && haskey(sym_to_op, Symbol(tokens[i]))
+            tokens[i] = sym_to_op[Symbol(tokens[i])]
         end
     end
 
@@ -99,13 +91,13 @@ given a certain token `tok`, 1 of 4 possible scenarios may occur:
     shunting_yard(expression::String)
 Return `expression` in postfix notation.
 """
-function shunting_yard(expression::String)
+function shunting_yard(expression::String; logic=MODAL_LOGIC)
     postfix = Union{AbstractOperator, String}[]
     opstack = Stack{Union{AbstractOperator, String}}() # This contains operators or "("
 
-    tokens = tokenizer(expression)
+    tokens = tokenizer(expression, ops=operators(logic))
     for tok in tokens
-        _shunting_yard(postfix, opstack, tok)
+        _shunting_yard(postfix, opstack, tok, logic)
     end
 
     # Remaining tokens are pushed to postfix
@@ -118,9 +110,9 @@ function shunting_yard(expression::String)
     return postfix
 end
 
-function _shunting_yard(postfix, opstack, tok)
+function _shunting_yard(postfix, opstack, tok, logic::AbstractLogic)
     # 1
-    if tok in alphabet
+    if tok in alphabet(logic)
         push!(postfix, tok)
     # 2
     elseif tok == "("
