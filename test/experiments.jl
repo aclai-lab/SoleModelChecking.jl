@@ -136,8 +136,11 @@ function _timed_check_experiment(
     return t
 end
 
-rng = 1337
-Random.seed!(rng)
-letters = LetterAlphabet(["p", "q", "r"])
-kms = [gen_kmodel(50, rand(1:rand(1:5)), rand(1:rand(1:5)), P=letters) for _ in 1:10]
-times = mmcheck_experiment(kms, 100, 3, [0,3], P=letters, reps=10, rng=rng)
+function driver()
+    rng = 1337
+    Random.seed!(rng)
+    letters = LetterAlphabet(["a", "b", "k", "z"])
+    kms = [gen_kmodel(50, rand(1:rand(1:5)), rand(1:rand(1:5)), P=letters) for _ in 1:10]
+    times = mmcheck_experiment(kms, 100, 3, [0,3], P=letters, reps=10, rng=rng)
+end
+driver()

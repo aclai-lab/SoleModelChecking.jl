@@ -19,11 +19,11 @@ Given a certain token `tok`, 1 of 3 possible scenarios may occur:
 At the end, the only remaining node in `nodestack` is the root of the formula (syntax) tree.
 =#
 
-function tree(expression::Vector{Union{String, AbstractOperator}}; letters=SoleLogics.alphabet(MODAL_LOGIC))
+function tree(expression::Vector{Union{String, AbstractOperator}})
     nodestack = Stack{Node}()
 
     for tok in expression
-        _tree(tok, nodestack, letters)
+        _tree(tok, nodestack)
     end
 
     SoleLogics.size!(first(nodestack))
@@ -35,10 +35,10 @@ function tree(expression::Vector{<:Any})
     tree(convert(Vector{Union{String, AbstractOperator}}, expression))
 end
 
-function _tree(tok, nodestack, letters::LetterAlphabet)
+function _tree(tok, nodestack)
     newnode = Node(tok)
     # 1
-    if tok in letters
+    if is_proposition(tok)
         newnode.formula = string(tok)
         push!(nodestack, newnode)
     # 2
