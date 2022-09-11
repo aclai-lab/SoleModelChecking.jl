@@ -159,7 +159,7 @@ function driver(kwargs...; rng=1337)
     # #NOTE: This code is repeated 2 times in order to be sure to get rid of compilation
     # overhead which drastically affect the final experiment plot.
     # Another solution has to be found as execution time is now doubled.
-    times = mmcheck_experiment(kms, kwargs[5], kwargs[4], collect([0:kwargs[4]]...), P=letters, reps=kwargs[6], rng=rng, export_plot=false)
+    # times = mmcheck_experiment(kms, kwargs[5], kwargs[4], collect([0:kwargs[4]]...), P=letters, reps=kwargs[6], rng=rng, export_plot=false)
     times = mmcheck_experiment(kms, kwargs[5], kwargs[4], collect([0:kwargs[4]]...), P=letters, reps=kwargs[6], rng=rng)
 end
 driver(parse.(Int64, ARGS)..., rng=1337)

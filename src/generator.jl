@@ -17,13 +17,29 @@ function gen_formula(
     height::Integer;
     P::LetterAlphabet = SoleLogics.alphabet(MODAL_LOGIC),
     C::Operators = SoleLogics.operators(MODAL_LOGIC),
-    max_modepth::Integer = height
+    max_modepth::Integer = height,
+    normalization::Bool = true
 )
-    return tree(_gen_formula(height, P, C, modal_depth=max_modepth))
+    fx = tree(_gen_formula(height, P, C, modal_depth=max_modepth))
+    if normalization
+        fnormalize!(fx)
+    end
+
+    return fx
 end
 
-function gen_formula(height::Integer, logic::AbstractLogic; max_modepth::Integer = height)
-    return tree(_gen_formula(height, SoleLogics.alphabet(logic), SoleLogics.operators(logic), modal_depth=max_modepth))
+function gen_formula(
+    height::Integer,
+    logic::AbstractLogic;
+    max_modepth::Integer = height,
+    normalization::Bool = true
+)
+    fx = tree(_gen_formula(height, SoleLogics.alphabet(logic), SoleLogics.operators(logic), modal_depth=max_modepth))
+    if normalization
+        fnormalize!(fx)
+    end
+
+    return fx
 end
 
 function _gen_formula(

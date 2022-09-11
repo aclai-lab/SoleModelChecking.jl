@@ -15,7 +15,8 @@ println("Julia version: ", VERSION)
 test_suites = [
     ("Formulas", [
         "formulas/generation.jl",
-        "formulas/input.jl"
+        "formulas/input.jl",
+        "formulas/normalization.jl"
     ]),
     ("Models", [
         "models/generation.jl",

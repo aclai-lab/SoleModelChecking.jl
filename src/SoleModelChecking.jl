@@ -9,7 +9,7 @@ using Reexport
 
 # Formula tree
 export shunting_yard
-export tree, subformulas
+export tree, subformulas, fnormalize!
 
 # Model checker
 export Worlds, Adjacents

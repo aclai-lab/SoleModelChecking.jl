@@ -1,21 +1,3 @@
-###########################
-#           Temp          #
-#          section        #
-###########################
-
-const operators_precedence = Dict{Union{AbstractOperator,Symbol}, Int}(
-    :¬ => 30,
-    Symbol("◊") => 20,
-    Symbol("□") => 20,
-    :→ => 10,
-    :∧ => 10,
-    :∨ => 10,
-)
-precedence(op::Symbol) = operators_precedence[op]
-precedence(op::Union{AbstractOperator, String}) = operators_precedence[Symbol(op)]
-##### End of Temp section ####
-
-
 # A simple lexer capable of distinguish operators in a string
 function tokenizer(expression::String; ops=operators(MODAL_LOGIC))
     tokens = Union{AbstractOperator, String}[]

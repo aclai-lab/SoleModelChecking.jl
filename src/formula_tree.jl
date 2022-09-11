@@ -91,3 +91,38 @@ function _subformulas(node::Node, nodes::Vector{Node})
         _subformulas(node.rightchild, nodes)
     end
 end
+
+# This has to be shifted somewhere in SoleLogics or SoleAlphabets
+import SoleLogics: precedence
+SoleLogics.precedence(l::Letter) = Int(only(l))
+
+function fnormalize!(fx::Formula)
+    fnormalize!(fx.tree)
+end
+
+function fnormalize!(node::Node)
+    if isleaf(node)
+        return
+    elseif is_commutative(token(node))
+        left_child = leftchild(node)
+        right_child = rightchild(node)
+        if !is_less(token(left_child), token(right_child))
+            rightchild!(node, left_child)
+            leftchild!(node, right_child)
+        end
+    end
+
+    if isdefined(node, :leftchild)
+        fnormalize!(leftchild(node))
+    end
+    if isdefined(node, :rightchild)
+        fnormalize!(rightchild(node))
+    end
+end
+
+function is_less( a::T1, b::T2) where {
+    T1<:Union{Letter, <:AbstractOperator},
+    T2<:Union{Letter, <:AbstractOperator}
+}
+    return precedence(a) < precedence(b) ? true : false
+end
