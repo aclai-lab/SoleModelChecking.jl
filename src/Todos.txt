@@ -28,6 +28,8 @@
         ☐ tikz for julia
     ☐ Get rid of boring precompilation times as much as possible (https://julialang.org/blog/2021/01/precompile_tutorial/)
 
+☐ Force "test/plots" folder push to github, since this is randomly ignored also by manually adding it in a new commit.
+
 ☐ Find a way to memoize "a DISJUNCTION b" with the same hash as "b  DISJUNCTION a"; 
     (call a normalization function before model checking, using is_commutative trait)
     ☐ thus, implement some `isless` function 

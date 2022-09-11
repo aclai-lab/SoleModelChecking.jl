@@ -5,7 +5,11 @@ using Missings
 using Plots
 using CPUTime
 
-# NOTE: -i flag is needed when executing this script outside REPL, to show plots.
+#=
+using BenchmarkTools
+BenchmarkTools.DEFAULT_PARAMETERS.samples = 1
+BenchmarkTools.DEFAULT_PARAMETERS.evals = 1
+=#
 
 ###############################
 #      Multiple formula       #
@@ -15,11 +19,15 @@ using CPUTime
 
 # The purpose of this function is to force julia to compile all the functions
 # involved in the process of testing mmcheck.
-# This is must be called once before measuring times.
+# This is must be called once before measuring times, but doesn't guarantee to compile all
+# the needed code.
 # Also, this is the ugliest thing I have ever written and should be changed
 function __force_compilation__()
-    kms = [gen_kmodel(30, 5, 5) for _ in 1:10]
-    for _ in 1:10
+    # Setting a specific seed here is crucial as the final plot result could be alterate
+    # if this experiment doesn't always triggers the same "compilation-spots".
+    Random.seed!(5000)
+    kms = [gen_kmodel(30, 5, 5) for _ in 1:30]
+    for _ in 1:100
         _mmcheck_experiment(kms, 10, 9999)
     end
 end
@@ -35,7 +43,8 @@ function mmcheck_experiment(
     fheight_memo::Vector{<:Number};
     P = SoleLogics.alphabet(MODAL_LOGIC),
     reps::Integer = 1,
-    rng::Integer = 1337
+    rng::Integer = 1337,
+    export_plot = true
 ) where {T<:AbstractWorld}
     __force_compilation__()
 
@@ -49,16 +58,13 @@ function mmcheck_experiment(
             # seed is set, then it's increased to guarantee more variability in the future
             Random.seed!(rng)
             rng = rng + 1
-
             # `fnumbers` model checkings are called, keeping memoization among calls
             current_times = Float64[]
             for i in 1:fnumbers
                 push!(current_times, _mmcheck_experiment(𝑀, fheight, fheight_memo[m], P=P))
             end
-
             # current_times are additioned in the collection wich will be returned
             times[m,:] = times[m,:] + current_times[:]
-
             # memoization is completely cleaned up; this way next iterations will not cheat
             for km in 𝑀
                 empty!(memo(km))
@@ -68,20 +74,22 @@ function mmcheck_experiment(
     # mean times
     times = times ./ reps
 
-    fpath = "./test/plots/"
-    # for each requested memo_fheight, a line is plotted
-    # number of formulas vs time
-    plt1 = plot()
-    for m in eachindex(fheight_memo)
-        plot!(plt1, 1:fnumbers, cumsum(times[m,:]), labels="memo: $(fheight_memo[m])", legend=:topleft)
-    end
-    savefig(plt1, fpath*"$(fnumbers)_$(fheight).png")
+    if export_plot
+        fpath = "./test/plots/"
+        # number of formulas vs cumulative time
+        plt1 = plot()
+        for m in eachindex(fheight_memo)
+            plot!(plt1, 1:fnumbers, cumsum(times[m,:]), labels="memo: $(fheight_memo[m])", legend=:topleft)
+        end
+        savefig(plt1, fpath*"$(fnumbers)_$(fheight).png")
 
-    #= level of memoization vs time
-    plt2 = plot()
-    plot!(plt2, fheight_memo[:], [cumsum(times[row,:])[fnumbers] for row in 1:length(fheight_memo)])
-    display(plt2)
-    =#
+        # nth formula vs istantaneous time
+        plt2 = plot()
+        for m in eachindex(fheight_memo)
+            scatter!(plt2, 1:fnumbers, times[m,:], labels="memo: $(fheight_memo[m])", legend=:topleft, markersize=2, markerstrokewidth = 0)
+        end
+        savefig(plt2, fpath*"$(fnumbers)_$(fheight)_#2.png")
+    end
 
     return times
 end
@@ -95,12 +103,9 @@ function _mmcheck_experiment(
     P = SoleLogics.alphabet(MODAL_LOGIC)
 ) where {T<:AbstractWorld}
     elapsed = zero(Float64)
-
     for km in 𝑀
-        t = _timed_check_experiment(km, gen_formula(fheight, P=P), max_height=memo_fheight)
-        elapsed = elapsed + t
+        elapsed = elapsed + _timed_check_experiment(km, gen_formula(fheight, P=P), max_fheight_memo=memo_fheight)
     end
-
     return elapsed
 end
 
@@ -110,18 +115,22 @@ end
 function _timed_check_experiment(
     km::KripkeModel,
     fx::SoleLogics.Formula;
-    max_height=Inf
+    max_fheight_memo=Inf
 )
     forget_list = Vector{SoleLogics.Node}()
     t = zero(Float64)
 
-    if !haskey(memo(km), fhash(fx.tree))    # TODO: this check should be timed too
+    if !haskey(memo(km), fhash(fx.tree))
         for psi in subformulas(fx.tree)
-            if height(psi) > max_height
+            if height(psi) > max_fheight_memo
                 push!(forget_list, psi)
             end
-            t = t + @CPUelapsed if haskey(memo(km), fhash(psi)) continue end
-            t = t + @CPUelapsed (_process_node(km, psi))
+            t = t + @CPUelapsed if !haskey(memo(km), fhash(psi)) _process_node(km, psi) end
+
+            #= This is the correct way to measure time without the giant (98%) interference of compilation time
+            if haskey(memo(km), fhash(psi)) continue end
+            t = t + @belapsed (_process_node($km, $psi))
+            =#
         end
     end
 
@@ -136,11 +145,21 @@ function _timed_check_experiment(
     return t
 end
 
-function driver()
-    rng = 1337
+# This needs
+# number of models, worlds in each model, alphabet cardinality, formula height, number of formulas, repetitions
+# e.g 10 20 10 5 1000 50
+function driver(kwargs...; rng=1337)
     Random.seed!(rng)
-    letters = LetterAlphabet(["a", "b", "k", "z"])
-    kms = [gen_kmodel(50, rand(1:rand(1:5)), rand(1:rand(1:5)), P=letters) for _ in 1:10]
-    times = mmcheck_experiment(kms, 100, 3, [0,3], P=letters, reps=10, rng=rng)
+    # Create an alphabet with kwargs[3]-1 letters
+    letters = LetterAlphabet(collect(string.(['a':('a'+(kwargs[3]-1))]...)))
+    # Create kwargs[1] models. Each world in/out degree ranges from 1 to kwargs[2]
+    kms = [gen_kmodel(kwargs[2], rand(1:rand(1:kwargs[2])), rand(1:rand(1:kwargs[2])), P=letters) for _ in 1:kwargs[1]]
+
+    # Start an experiment with kwargs[5] formulas, each with height kwargs[4], and repeat it kwargs[6] times
+    # #NOTE: This code is repeated 2 times in order to be sure to get rid of compilation
+    # overhead which drastically affect the final experiment plot.
+    # Another solution has to be found as execution time is now doubled.
+    times = mmcheck_experiment(kms, kwargs[5], kwargs[4], collect([0:kwargs[4]]...), P=letters, reps=kwargs[6], rng=rng, export_plot=false)
+    times = mmcheck_experiment(kms, kwargs[5], kwargs[4], collect([0:kwargs[4]]...), P=letters, reps=kwargs[6], rng=rng)
 end
-driver()
+driver(parse.(Int64, ARGS)..., rng=1337)

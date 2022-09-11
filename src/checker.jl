@@ -182,8 +182,7 @@ function _check_binary(km::KripkeModel, ψ::Node)
 end
 
 function _process_node(km::KripkeModel, ψ::Node)
-    #TODO: use is_proposition(token(ψ)) here
-    if token(ψ) in SoleLogics.alphabet(MODAL_LOGIC)
+    if is_proposition(token(ψ))
         _check_alphabet(km, ψ)
     elseif is_unary_operator(token(ψ))
         _check_unary(km, ψ)
