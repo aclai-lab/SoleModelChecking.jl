@@ -114,18 +114,19 @@ end
 #         Model Checking        #
 #################################
 function _check_alphabet(km::KripkeModel, ψ::Node)
+    # As well as _check_unary and _check_binary, this could be done
+    # @assert token(ψ) in SoleLogics.alphabet(logic(km)) "$(token(ψ)) is an invalid letter"
     key = fhash(ψ)
 
     for w in worlds(km)
         # memo
-        if w in values(memo(km, key))
+        if w in memo(km, key)
             continue
         # new entry
         elseif token(ψ) in evaluations(km,w)
             push!(km, key, w)
         # no world
         elseif !haskey(memo(km), key)
-            # TODO: should be generalized to WorldsSet or MemoValueType
             setindex!(memo(km), MemoValueType{eltype(km)}([]), key)
         end
     end
@@ -138,7 +139,7 @@ function _check_unary(km::KripkeModel, ψ::Node)
     # Result is already computed
     if haskey(memo(km), key)
         return
-     else
+    else
         setindex!(memo(km), MemoValueType{eltype(km)}([]), key)
     end
 
@@ -147,7 +148,7 @@ function _check_unary(km::KripkeModel, ψ::Node)
     # Ad-hoc negation case
     if typeof(token(ψ)) == SoleLogics.UnaryOperator{:¬}
         # NOTE: why is casting to MemoValueType needed here?
-        setindex!(memo(km), MemoValueType{eltype(km)}(setdiff(worlds(km), memo(km, right_key))), key)
+        setindex!(memo(km), NEGATION(worlds(km), memo(km, right_key)), key)
     elseif is_modal_operator(token(ψ))
         for w in worlds(km)
             # Consider w's neighbors

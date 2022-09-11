@@ -35,6 +35,9 @@ function tree(expression::Vector{<:Any})
     tree(convert(Vector{Union{String, AbstractOperator}}, expression))
 end
 
+# Dispatch to directly create a formula tree from a non-preprocessed string
+tree(expression::String) = tree(shunting_yard(expression))
+
 function _tree(tok, nodestack)
     newnode = Node(tok)
     # 1
@@ -66,9 +69,6 @@ function _tree(tok, nodestack)
         throw(error("Unknown token $tok"))
     end
 end
-
-# Dispatch to directly create a formula tree from a non-preprocessed string
-tree(expression::String) = tree(shunting_yard(expression))
 
 # Collect each node in a tree, then sort them by size.
 function subformulas(root::Node; sorted=true)

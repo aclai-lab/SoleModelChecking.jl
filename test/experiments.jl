@@ -46,7 +46,7 @@ function mmcheck_experiment(
     rng::Integer = 1337,
     export_plot = true
 ) where {T<:AbstractWorld}
-    __force_compilation__()
+    # __force_compilation__()
 
     # all the different memoization levels are converted to integers
     fheight_memo = [m == Inf ? fheight : convert(Int64, m) for m in fheight_memo]
@@ -147,7 +147,7 @@ end
 
 # This needs
 # number of models, worlds in each model, alphabet cardinality, formula height, number of formulas, repetitions
-# e.g 10 20 10 5 1000 50
+# e.g 10 20 2 3 1000 10
 function driver(kwargs...; rng=1337)
     Random.seed!(rng)
     # Create an alphabet with kwargs[3]-1 letters

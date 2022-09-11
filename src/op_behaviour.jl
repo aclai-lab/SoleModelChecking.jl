@@ -8,8 +8,8 @@ SoleLogics.NEGATION(a::Bool) = (!a)
 SoleLogics.NEGATION(universe::Worlds{T}, ws::Worlds{T}) where {T<:AbstractWorld} = begin
     return Worlds{T}(setdiff(universe, ws))
 end
-SoleLogics.NEGATION(universe::Set{T}, ws::Set{T}) where {T<:AbstractWorld} = begin
-    return setdiff(universe, ws)
+SoleLogics.NEGATION(universe::Worlds{T}, ws::Set{T}) where {T<:AbstractWorld} = begin
+    return setdiff(Set(universe), ws)
 end
 
 SoleLogics.CONJUNCTION(a::Bool, b::Bool) = (a&&b)
@@ -33,25 +33,25 @@ function dispatch_modop(
     token::T,
     km::KripkeModel{WT},
     w::WT,
-    phi::UInt64
+    φ::UInt64
 ) where {
     T<:AbstractModalOperator,
     WT<:AbstractWorld
 }
     # Consider v as some neighbor of our w
-    # In the existential case, if some km,v ⊨ phi (possibly one v) then return true
-    # In the universal case, if all km,v ⊨ phi then return true
+    # In the existential case, if some km,v ⊨ φ (possibly one v) then return true
+    # In the universal case, if all km,v ⊨ φ then return true
 
     # ⟨⟩ (or ◊) Existential modal operator case:
     # s = false
-    # foreach neighbor of psi
-    #   s = s or contains(km, phi, neighbor)
+    # foreach neighbor of ψ
+    #   s = s or contains(km, φ, neighbor)
     #   if s is true, then i can already stop cycling   <- short circuit
 
     # [] (or □) Universal modal operator case:
     # s = true
-    # foreach neighbor of psi
-    #   s = s and contains(km, phi, neighbor)
+    # foreach neighbor of ψ
+    #   s = s and contains(km, φ, neighbor)
     #   if s is false, then i can already stop cycling  <- short circuit
 
     start_cond = is_universal_modal_operator(token)
@@ -62,7 +62,7 @@ function dispatch_modop(
     # sometime short-circuit happens
     s = start_cond
     for neighbor in adjacents(km, w)
-        s = op(s, contains(km, phi, neighbor))
+        s = op(s, contains(km, φ, neighbor))
         if s == !start_cond
             break;
         end

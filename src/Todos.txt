@@ -49,6 +49,8 @@ Todos for the future:
 ☐ Write some Letter struct and avoid working with plain strings (SoleAlphabet)
 ☐ Refine code since now it only works with PointWorlds
 ☐ Look for more appropriate variable names
+☐ Add types when a optional argument is given in a function
+☐ Consider leaf nodes as sentinels when calling gen_formula
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 New dependencies (see Project.toml) to GraphPlotting:
