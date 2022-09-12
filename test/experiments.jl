@@ -43,6 +43,7 @@ function mmcheck_experiment(
     fheight_memo::Vector{<:Number};
     P = SoleLogics.alphabet(MODAL_LOGIC),
     reps::Integer = 1,
+    experiment_parametrization::Tuple = (fnumbers, fheight, fheight_memo, Threads.nthreads()),
     rng::Integer = 1337,
     export_plot = true
 ) where {T<:AbstractWorld}
@@ -74,21 +75,24 @@ function mmcheck_experiment(
     # mean times
     times = times ./ reps
 
+    # TODO append times data to a csv, so that it can be then plotted in any way we want
+
     if export_plot
         fpath = "./test/plots/"
+        mkpath(fpath)
         # number of formulas vs cumulative time
         plt1 = plot()
         for m in eachindex(fheight_memo)
             plot!(plt1, 1:fnumbers, cumsum(times[m,:]), labels="memo: $(fheight_memo[m])", legend=:topleft)
         end
-        savefig(plt1, fpath*"$(fnumbers)_$(fheight).png")
+        savefig(plt1, fpath*"simple-$(join(experiment_parametrization, "_")).png")
 
         # nth formula vs istantaneous time
         plt2 = plot()
         for m in eachindex(fheight_memo)
             scatter!(plt2, 1:fnumbers, times[m,:], labels="memo: $(fheight_memo[m])", legend=:topleft, markersize=2, markerstrokewidth = 0)
         end
-        savefig(plt2, fpath*"$(fnumbers)_$(fheight)_#2.png")
+        savefig(plt2, fpath*"scatter-$(join(experiment_parametrization, "_")).png")
     end
 
     return times
@@ -160,6 +164,16 @@ function driver(kwargs...; rng=1337)
     # overhead which drastically affect the final experiment plot.
     # Another solution has to be found as execution time is now doubled.
     # times = mmcheck_experiment(kms, kwargs[5], kwargs[4], collect([0:kwargs[4]]...), P=letters, reps=kwargs[6], rng=rng, export_plot=false)
-    times = mmcheck_experiment(kms, kwargs[5], kwargs[4], collect([0:kwargs[4]]...), P=letters, reps=kwargs[6], rng=rng)
+    times = mmcheck_experiment(
+        kms,
+        kwargs[5],
+        kwargs[4],
+        collect([0:kwargs[4]]...),
+        P=letters,
+        reps=kwargs[6],
+        experiment_parametrization=Tuple([kwargs..., Threads.nthreads()]),
+        rng=rng
+    )
 end
+
 driver(parse.(Int64, ARGS)..., rng=1337)
