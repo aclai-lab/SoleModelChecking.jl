@@ -1,7 +1,7 @@
 ✓ Build a formula-tree generation system
     ✓ Random, but still correct, formulas given a chosen length
     ✓ Modal depth regulation
-    ½ Test (I would like to do more tests)
+    ✓ Test (I would like to do more tests)
     ☐ Guarantee the same generation-probability foreach possible formula
     ☐ Think about other parameters to tweak
 
@@ -13,26 +13,18 @@
     (Worlds, thus Vector{AbstractWorld}, and WorldsSet, thus Set{AbstractWorld})
     ✓ Memoization regulation 
     ✓ Put everything togheter (see comments in `check`) #NOTE: experiments.jl
-    ☐ Correctness check
-        ☐ Every check variant correctness was already tested, but now this has to be done neatly
-        ☐ Change Matrix to some 2D SLArray (https://github.com/SciML/LabelledArrays.jl)
+    ✓ Correctness check
     ☐ Find a trick to safely remove _process_node from exports without breaking the tests
     ☐ Parallelize where possible (https://docs.julialang.org/en/v1/manual/multi-threading/)
         "Base collection types require manual locking if used simultaneously by multiple 
         threads where at least one thread modifies the collection 
         (common examples include push! on arrays, or inserting items into a Dict)."
-    ☐ Clean plots!
-        ☐ experiments
-        ✓ fix @elapsed bug (first time mmcheck_experiment is run, compilation time is taken...)
-            see __force_compilation__
-        ☐ tikz for julia
+    ✓ Plots
     ☐ Get rid of boring precompilation times as much as possible (https://julialang.org/blog/2021/01/precompile_tutorial/)
 
-☐ Force "test/plots" folder push to github, since this is randomly ignored also by manually adding it in a new commit.
-
-☐ Find a way to memoize "a DISJUNCTION b" with the same hash as "b  DISJUNCTION a"; 
+✓ Find a way to memoize "a DISJUNCTION b" with the same hash as "b  DISJUNCTION a"; 
     (call a normalization function before model checking, using is_commutative trait)
-    ☐ thus, implement some `isless` function 
+    ✓ thus, implement some `isless` function 
 
 ✓ "formula" parameter in hashing could be removed 
     (just do hash(token(node))).
@@ -50,6 +42,7 @@ Todos for the future:
 ☐ Refine code since now it only works with PointWorlds
 ☐ Look for more appropriate variable names
 ☐ Add types when a optional argument is given in a function
+☐ Force "test/plots" folder push to github, since this is randomly ignored also by manually adding it in a new commit.
 ☐ Consider leaf nodes as sentinels when calling gen_formula
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
