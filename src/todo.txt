@@ -34,6 +34,8 @@
     The previous mapping (hashed_subformula, world) -> boolean 
     is now changed in (hashed_subformula) -> some_world_collection (possibly empty)
 
+☐ Make args more manageable
+☐ Add rng injection whenever rand() is used in exported functions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Todos for the future:
 

@@ -18,9 +18,11 @@ function gen_formula(
     P::LetterAlphabet = SoleLogics.alphabet(MODAL_LOGIC),
     C::Operators = SoleLogics.operators(MODAL_LOGIC),
     max_modepth::Integer = height,
-    normalization::Bool = true
+    normalization::Bool = true,
+    rng::Union{Integer,AbstractRNG} = Random.GLOBAL_RNG
 )
-    fx = tree(_gen_formula(height, P, C, modal_depth=max_modepth))
+    rng = (typeof(rng) <: Integer) ? Random.MersenneTwister(rng) : rng
+    fx = tree(_gen_formula(height, P, C, modal_depth=max_modepth, rng=rng))
     if normalization
         fnormalize!(fx)
     end
@@ -32,9 +34,11 @@ function gen_formula(
     height::Integer,
     logic::AbstractLogic;
     max_modepth::Integer = height,
-    normalization::Bool = true
+    normalization::Bool = true,
+    rng::Union{Integer,AbstractRNG} = Random.GLOBAL_RNG
 )
-    fx = tree(_gen_formula(height, SoleLogics.alphabet(logic), SoleLogics.operators(logic), modal_depth=max_modepth))
+    rng = (typeof(rng) <: Integer) ? Random.MersenneTwister(rng) : rng
+    fx = tree(_gen_formula(height, SoleLogics.alphabet(logic), SoleLogics.operators(logic), modal_depth=max_modepth, rng=rng))
     if normalization
         fnormalize!(fx)
     end
@@ -46,11 +50,12 @@ function _gen_formula(
     height::Integer,
     P::LetterAlphabet,
     C::Operators;
-    modal_depth::Integer
+    modal_depth::Integer,
+    rng::AbstractRNG = Random.GLOBAL_RNG
 )
     # Propositional letters are always leaf
     if height==1
-        return [rand(P)]
+        return [rand(rng, P)]
     end
 
     # A random valid operator is chosen
@@ -59,9 +64,9 @@ function _gen_formula(
         @assert length(C[!is_modal_operator.(C)]) >= 0
         op = rand(C[!is_modal_operator.(C)])
         =#
-        op = rand(filter(x -> !is_modal_operator(x), C))
+        op = rand(rng, filter(x -> !is_modal_operator(x), C))
     else
-        op = rand(C)
+        op = rand(rng, C)
     end
 
     # Operator C refers to a number of subformulas equals to its ariety
@@ -83,8 +88,8 @@ end
 # Create a graph as an adjacency matrix by randomling
 # sampling (probability p) the edges between n nodes.
 # Convert the same graph to an adjacency list and return it.
-function gnp(n::Integer, p::Float64)
-    M = _gnp(n, p)
+function gnp(n::Integer, p::Float64; rng::Union{Integer,AbstractRNG} =Random.GLOBAL_RNG)
+    M = _gnp(n, p, rng)
 
     worlds = Worlds([PointWorld(i) for i in 1:n])
     adjs = Adjacents{PointWorld}()
@@ -103,11 +108,11 @@ function gnp(n::Integer, p::Float64)
     return adjs
 end
 
-function _gnp(n::Integer, p::Real)
+function _gnp(n::Integer, p::Real, rng::AbstractRNG)
     M = zeros(Int8, n, n)
 
     for i in 1:n, j in 1:i
-        if rand() < p
+        if rand(rng) < p
             M[i,j] = 1
         end
     end
@@ -122,17 +127,24 @@ end
 # 1) _fanout increases a certain node's output_degree grow by spawning new vertices
 # 2) _fanin increases the input_degree of a certain group of nodes
 #    by linking a single new vertices to all of them
-function fanfan(n::Integer, id::Integer, od::Integer; threshold=0.5)
+function fanfan(
+    n::Integer,
+    id::Integer,
+    od::Integer;
+    threshold::Float64=0.5,
+    rng::Union{Integer,AbstractRNG}=Random.GLOBAL_RNG
+)
+    rng = (typeof(rng) <: Integer) ? Random.MersenneTwister(rng) : rng
     adjs = Adjacents{PointWorld}()
     setindex!(adjs, Worlds{PointWorld}([]), PointWorld(0))  # Ecco qua ad esempio metti un GenericWorld
 
     od_queue = PriorityQueue{PointWorld, Int64}(PointWorld(0) => 0)
 
     while length(adjs.adjacents) <= n
-        if rand() <= threshold
-            _fanout(adjs, od_queue, od)
+        if rand(rng) <= threshold
+            _fanout(adjs, od_queue, od, rng)
         else
-            _fanin(adjs, od_queue, id, od)
+            _fanin(adjs, od_queue, id, od, rng)
         end
     end
 
@@ -142,7 +154,8 @@ end
 function _fanout(
     adjs::Adjacents{PointWorld},
     od_queue::PriorityQueue{PointWorld, Int},
-    od::Integer
+    od::Integer,
+    rng::AbstractRNG
 )
     #=
     Find the vertex v with the biggest difference between its out-degree and od.
@@ -151,7 +164,7 @@ function _fanout(
     =#
     v,m = peek(od_queue)
 
-    for i in rand(1:(od-m))
+    for i in rand(rng, 1:(od-m))
         new_node = PointWorld(length(adjs))
         setindex!(adjs, Worlds{PointWorld}([]), new_node)
         push!(adjs, v, new_node)
@@ -165,7 +178,8 @@ function _fanin(
     adjs::Adjacents{PointWorld},
     od_queue::PriorityQueue{PointWorld, Int},
     id::Integer,
-    od::Integer
+    od::Integer,
+    rng::AbstractRNG
 )
     #=
     Find the set S of all vertices that have out-degree < od.
@@ -173,7 +187,7 @@ function _fanin(
     Add a new vertex v and add new edges (v, t) for all t ∈ T
     =#
     S = filter(x -> x[2]<od, od_queue)
-    T = Set(sample(collect(S), rand(1:min(id, length(S))), replace=false))
+    T = Set(sample(collect(S), rand(rng, 1:min(id, length(S))), replace=false))
 
     v = PointWorld(length(adjs))
     for t in T
@@ -188,12 +202,14 @@ end
 # Associate each world to a subset of proposistional letters
 function dispense_alphabet(
     ws::Worlds{T};
-    P::LetterAlphabet = SoleLogics.alphabet(MODAL_LOGIC)
+    P::LetterAlphabet = SoleLogics.alphabet(MODAL_LOGIC),
+    rng::Union{Integer,AbstractRNG} = Random.GLOBAL_RNG
 ) where {T<:AbstractWorld}
+    rng = (typeof(rng) <: Integer) ? Random.MersenneTwister(rng) : rng
     evals = Dict{T, LetterAlphabet}()
     n = length(ws)
     for w in ws
-        evals[w] = sample(P, rand(0:length(P)), replace=false)
+        evals[w] = sample(P, rand(rng, 0:length(P)), replace=false)
     end
     return evals
 end
@@ -208,11 +224,13 @@ function gen_kmodel(
     in_degree::Integer,   # needed by fanfan
     out_degree::Integer;  # needed by fanfan
     P::LetterAlphabet = SoleLogics.alphabet(MODAL_LOGIC),
-    threshold=0.5         # needed by fanfan
+    threshold = 0.5,      # needed by fanfan
+    rng::Union{Integer,AbstractRNG} = Random.GLOBAL_RNG
 )
+    rng = (typeof(rng) <: Integer) ? Random.MersenneTwister(rng) : rng
     ws = Worlds{PointWorld}(world_gen(n))
-    adjs = fanfan(n, in_degree, out_degree, threshold=threshold)
-    evs = dispense_alphabet(ws, P=P)
+    adjs = fanfan(n, in_degree, out_degree, threshold=threshold, rng=rng)
+    evs = dispense_alphabet(ws, P=P, rng=rng)
     return KripkeModel{PointWorld}(ws, adjs, evs)
 end
 

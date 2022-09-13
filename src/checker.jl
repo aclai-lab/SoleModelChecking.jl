@@ -247,8 +247,6 @@ function check(
 
     for 𝑚 in eachindex(𝑀)
         for φ in eachindex(Φ)
-            #chottenuto = check(𝑀[𝑚], Φ[φ], max_fheight_memo=max_fheight_memo)
-            #println("provo la chiave di $(Φ[φ].tree) , $(fhash(Φ[φ].tree)), $(SoleLogics.height(Φ[φ].tree))")
             outcomes[𝑚,φ] = (iw in check(𝑀[𝑚], Φ[φ], max_fheight_memo=max_fheight_memo)[fhash(Φ[φ].tree)])
         end
     end
