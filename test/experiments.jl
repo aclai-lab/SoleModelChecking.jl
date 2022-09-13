@@ -45,10 +45,11 @@ function mmcheck_experiment(
     P = SoleLogics.alphabet(MODAL_LOGIC),
     reps::Integer = 1,
     experiment_parametrization::Tuple = (fnumbers, fheight, fheight_memo, Threads.nthreads()),
-    rng::Integer = 1337,
+    rng::Union{Integer,AbstractRNG} = 1337
     export_plot = true
 ) where {T<:AbstractWorld}
     # __force_compilation__()
+    rng = isinteger(rng) ? Random.MersenneTwister(rng) : rng
 
     # all the different memoization levels are converted to integers
     fheight_memo = [m == Inf ? fheight : convert(Int64, m) for m in fheight_memo]
@@ -57,13 +58,10 @@ function mmcheck_experiment(
 
     for _ in 1:reps
         for m in eachindex(fheight_memo)
-            # seed is set, then it's increased to guarantee more variability in the future
-            Random.seed!(rng)
-            rng = rng + 1
             # `fnumbers` model checkings are called, keeping memoization among calls
             current_times = Float64[]
             for i in 1:fnumbers
-                push!(current_times, _mmcheck_experiment(𝑀, fheight, fheight_memo[m], P=P))
+                push!(current_times, _mmcheck_experiment(𝑀, fheight, fheight_memo[m], P=P, rng=rand(Int, rng)))
             end
             # current_times are additioned in the collection wich will be returned
             times[m,:] = times[m,:] + current_times[:]
@@ -107,11 +105,13 @@ function _mmcheck_experiment(
     𝑀::Vector{KripkeModel{T}},
     fheight::Integer,
     memo_fheight::Integer;
-    P = SoleLogics.alphabet(MODAL_LOGIC)
+    P = SoleLogics.alphabet(MODAL_LOGIC),
+    rng::Union{Integer,AbstractRNG} = 1337,
 ) where {T<:AbstractWorld}
+    rng = isinteger(rng) ? Random.MersenneTwister(rng) : rng
     elapsed = zero(Float64)
     for km in 𝑀
-        elapsed = elapsed + _timed_check_experiment(km, gen_formula(fheight, P=P), max_fheight_memo=memo_fheight)
+        elapsed = elapsed + _timed_check_experiment(km, gen_formula(fheight, P=P, rng=rng), max_fheight_memo=memo_fheight)
     end
     return elapsed
 end
@@ -157,12 +157,16 @@ end
 # This needs
 # number of models, worlds in each model, alphabet cardinality, formula height, number of formulas, repetitions
 # e.g 10 20 2 3 1000 10
-function driver(kwargs...; rng=1337)
-    Random.seed!(rng)
+function driver(kwargs...;
+        rng::Union{Integer,AbstractRNG} = 1337
+    )
+    rng = isinteger(rng) ? Random.MersenneTwister(rng) : rng
+    rng2 = deepcopy(rng)
+    
     # Create an alphabet with kwargs[3]-1 letters
     letters = LetterAlphabet(collect(string.(['a':('a'+(kwargs[3]-1))]...)))
     # Create kwargs[1] models. Each world in/out degree ranges from 1 to kwargs[2]
-    kms = [gen_kmodel(kwargs[2], rand(1:rand(1:kwargs[2])), rand(1:rand(1:kwargs[2])), P=letters) for _ in 1:kwargs[1]]
+    kms = [gen_kmodel(kwargs[2], rand(rng, 1:rand(rng, 1:kwargs[2])), rand(rng, 1:rand(rng, 1:kwargs[2])), P=letters) for _ in 1:kwargs[1]]
 
     # Start an experiment with kwargs[5] formulas, each with height kwargs[4], and repeat it kwargs[6] times
     # NOTE: This code is repeated 2 times in order to be sure to get rid of compilation
@@ -177,7 +181,7 @@ function driver(kwargs...; rng=1337)
         P=letters,
         reps=kwargs[6],
         experiment_parametrization=Tuple([kwargs..., Threads.nthreads()]),
-        rng=rng
+        rng=rng2,
     )
 end
 
