@@ -5,6 +5,7 @@ version = "0.1.0"
 
 [deps]
 CPUTime = "a9c8d775-2e2e-55fc-8582-045d282d599e"
+CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 Compose = "a81c6b42-2e10-5240-aca2-a61377ecd94b"
 DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
 GraphPlot = "a2cc645c-3eea-5389-862e-a155d0052231"
@@ -19,6 +20,7 @@ SoleLogics = "b002da8f-3cb3-4d91-bbe3-2953433912b5"
 SoleTraits = "f0cd7361-857b-4e5b-8aae-3a26fab9cfa9"
 SoleWorlds = "d5f91e23-4e14-4856-a67b-b38735209aab"
 StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
+Tables = "bd369af6-aec1-5ad0-b16a-f7cc5008161c"
 
 [compat]
 julia = "1"

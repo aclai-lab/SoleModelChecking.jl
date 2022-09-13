@@ -3,6 +3,7 @@ using Test
 using Random
 using Missings
 using Plots
+using CSV, Tables
 using CPUTime
 
 #=
@@ -75,8 +76,10 @@ function mmcheck_experiment(
     # mean times
     times = times ./ reps
 
-    # TODO append times data to a csv, so that it can be then plotted in any way we want
+    # times are exported in a CSV file
+    CSV.write("./test/csv/$(join(experiment_parametrization, "_")).csv", Tables.table(times), append=true)
 
+    # if requested, plots are exported too
     if export_plot
         fpath = "./test/plots/"
         mkpath(fpath)
@@ -131,7 +134,9 @@ function _timed_check_experiment(
             end
             t = t + @CPUelapsed if !haskey(memo(km), fhash(psi)) _process_node(km, psi) end
 
-            #= This is the correct way to measure time without the giant (98%) interference of compilation time
+            #= This is the correct way to measure time without the giant
+            (98%) interference of compilation time. But it's too slow and
+            BenchmarkTools default "samples" and "evals" parameters must be set to 1.
             if haskey(memo(km), fhash(psi)) continue end
             t = t + @belapsed (_process_node($km, $psi))
             =#
@@ -160,7 +165,7 @@ function driver(kwargs...; rng=1337)
     kms = [gen_kmodel(kwargs[2], rand(1:rand(1:kwargs[2])), rand(1:rand(1:kwargs[2])), P=letters) for _ in 1:kwargs[1]]
 
     # Start an experiment with kwargs[5] formulas, each with height kwargs[4], and repeat it kwargs[6] times
-    # #NOTE: This code is repeated 2 times in order to be sure to get rid of compilation
+    # NOTE: This code is repeated 2 times in order to be sure to get rid of compilation
     # overhead which drastically affect the final experiment plot.
     # Another solution has to be found as execution time is now doubled.
     # times = mmcheck_experiment(kms, kwargs[5], kwargs[4], collect([0:kwargs[4]]...), P=letters, reps=kwargs[6], rng=rng, export_plot=false)
