@@ -22,7 +22,7 @@ function gen_formula(
     rng::Union{Integer,AbstractRNG} = Random.GLOBAL_RNG
 )
     rng = (typeof(rng) <: Integer) ? Random.MersenneTwister(rng) : rng
-    fx = tree(_gen_formula(height, P, C, modal_depth=max_modepth, rng=rng))
+    fx = tree(_gen_formula(height, P, C, modal_depth=max_modepth, pruning_factor=0.1, rng=rng))
     if normalization
         fnormalize!(fx)
     end
@@ -38,7 +38,7 @@ function gen_formula(
     rng::Union{Integer,AbstractRNG} = Random.GLOBAL_RNG
 )
     rng = (typeof(rng) <: Integer) ? Random.MersenneTwister(rng) : rng
-    fx = tree(_gen_formula(height, SoleLogics.alphabet(logic), SoleLogics.operators(logic), modal_depth=max_modepth, rng=rng))
+    fx = tree(_gen_formula(height, SoleLogics.alphabet(logic), SoleLogics.operators(logic), modal_depth=max_modepth, pruning_factor=0.1, rng=rng))
     if normalization
         fnormalize!(fx)
     end
@@ -51,10 +51,11 @@ function _gen_formula(
     P::LetterAlphabet,
     C::Operators;
     modal_depth::Integer,
+    pruning_factor::Float64 = 0.0,
     rng::AbstractRNG = Random.GLOBAL_RNG
 )
     # Propositional letters are always leaf
-    if height==1
+    if height==0 || rand(rng) < pruning_factor
         return [rand(rng, P)]
     end
 
@@ -70,7 +71,7 @@ function _gen_formula(
     end
 
     # Operator C refers to a number of subformulas equals to its ariety
-    f = vcat(map(_ -> _gen_formula(height-1, P, C, modal_depth = modal_depth - is_modal_operator(op)), 1:ariety(op))...)
+    f = vcat(map(_ -> _gen_formula(height-1, P, C, modal_depth = modal_depth - is_modal_operator(op), pruning_factor=pruning_factor, rng=rng), 1:ariety(op))...)
     f = convert(Vector{Union{String, AbstractOperator}}, f)
     push!(f, op)
 

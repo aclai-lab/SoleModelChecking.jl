@@ -1,9 +1,13 @@
 @testset "Formulas fundamental checks" begin
-    function fxtest_general(height::Integer)
-        formula = gen_formula(height)
-        @test SoleLogics.height(formula.tree) == height
-        @test SoleLogics.size(formula.tree) >= height
-        @test SoleLogics.size(formula.tree) <= 2^height - 1
+    function fxtest_general(h::Integer)
+        formula = gen_formula(h)
+
+        # Height check
+        @test SoleLogics.height(formula.tree) >= 0
+        @test SoleLogics.height(formula.tree) <= h
+        # Size check
+        @test SoleLogics.size(formula.tree) > SoleLogics.height(formula.tree)
+        @test SoleLogics.size(formula.tree) <= 2^(SoleLogics.height(formula.tree)+1) - 1
 
         for node in subformulas(formula.tree, sorted=false)
             lsize = isdefined(node, :leftchild) ? SoleLogics.size(leftchild(node)) : 0
