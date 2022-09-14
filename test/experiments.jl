@@ -20,16 +20,13 @@ BenchmarkTools.DEFAULT_PARAMETERS.evals = 1
 
 # The purpose of this function is to force julia to compile all the functions
 # involved in the process of testing mmcheck.
-# This is must be called once before measuring times, but doesn't guarantee to compile all
-# the needed code.
-# Also, this is the ugliest thing I have ever written and should be changed
-function __force_compilation__()
-    # Setting a specific seed here is crucial as the final plot result could be alterate
-    # if this experiment doesn't always triggers the same "compilation-spots".
-    Random.seed!(5000)
-    kms = [gen_kmodel(30, 5, 5) for _ in 1:30]
-    for _ in 1:100
-        _mmcheck_experiment(kms, 10, 9999)
+# This is automatically invoked once before measuring times.
+function __force_compilation__(rng::AbstractRNG)
+    kms = [gen_kmodel(30, 5, 5, rng=rng) for _ in 1:30]
+    fnumbers = 100
+    fxs = [gen_formula(fheight, P=P, rng=rng) for _ in 1:fnumbers]
+    for i in 1:fnumbers
+        _mmcheck_experiment(kms, fxs[i], 10)
     end
 end
 
@@ -48,7 +45,6 @@ function mmcheck_experiment(
     rng::Union{Integer,AbstractRNG} = 1337,
     export_plot = true
 ) where {T<:AbstractWorld}
-    # __force_compilation__()
     rng = (typeof(rng) <: Integer) ? Random.MersenneTwister(rng) : rng
 
     # all the different memoization levels are converted to integers
@@ -57,21 +53,13 @@ function mmcheck_experiment(
     # time matrix is initialized
     times = fill(zero(Float64), length(fheight_memo), fnumbers)
 
-    for _ in 1:reps
-        fxs = [gen_formula(fheight, P=P, rng=rng) for _ in 1:fnumbers]
-        for m in eachindex(fheight_memo)
-            # `fnumbers` model checkings are called, keeping memoization among calls
-            current_times = Float64[]
-            for i in 1:fnumbers
-                push!(current_times, _mmcheck_experiment(𝑀, fxs[i], fheight_memo[m]))
-            end
-            # current_times are additioned in the collection wich will be returned
-            times[m,:] = times[m,:] + current_times[:]
-            # memoization is completely cleaned up; this way next iterations will not cheat
-            for km in 𝑀
-                empty!(memo(km))
-            end
-        end
+    # Dummy execution
+    for _ in 1:(reps*0.1)
+        _mmcheck_experiment(𝑀, fnumbers, fheight, fheight_memo, rng=rng)
+    end
+    # Main computational cycle
+    for rep in 1:reps
+        times = times + _mmcheck_experiment(𝑀, fnumbers, fheight, fheight_memo, rng=rng)
     end
     # mean times
     times = times ./ reps
@@ -101,6 +89,45 @@ function mmcheck_experiment(
     return times
 end
 
+function _mmcheck_experiment(
+    𝑀::Vector{KripkeModel{T}},
+    fnumbers::Integer,
+    fheight::Integer,
+    fheight_memo::Vector{<:Number};
+    P = SoleLogics.alphabet(MODAL_LOGIC),
+    rng::AbstractRNG
+) where {T <: AbstractWorld}
+    # time matrix is initialized
+    times = fill(zero(Float64), length(fheight_memo), fnumbers)
+
+    # array of formulas is generated
+    fxs = [gen_formula(fheight, P=P, rng=rng) for _ in 1:fnumbers]
+
+    for m in eachindex(fheight_memo)
+        # `fnumbers` model checkings are called, keeping memoization among calls
+        current_times = Float64[]
+
+        # fnumbers times are pushed into current_times
+        for i in 1:fnumbers
+            elapsed = zero(Float64)
+            for km in 𝑀
+                elapsed = elapsed + _timed_check_experiment(km, fxs[i], max_fheight_memo=fheight_memo[m])
+            end
+            push!(current_times, elapsed)
+        end
+
+        # a complete level of memoization is now tested
+        times[m,:] = times[m,:] + current_times[:]
+        # memoization is completely cleaned up; this way next iterations will not cheat
+        for km in 𝑀
+            empty!(memo(km))
+        end
+    end
+
+    return times
+end
+
+#=
 # Utility function to retrieve total time elapsed to compute multiple model checkings.
 # See mmcheck_experiment.
 function _mmcheck_experiment(
@@ -114,6 +141,7 @@ function _mmcheck_experiment(
     end
     return elapsed
 end
+=#
 
 # Timed model checking. Return a pair containing the elapsed time
 # and a boolean (representing if fx is valid on init_world).
@@ -162,7 +190,6 @@ function driver(
     rng::Union{Integer,AbstractRNG} = 1337
 )
     rng = (typeof(rng) <: Integer) ? Random.MersenneTwister(rng) : rng
-    rng2 = deepcopy(rng)
 
     # Create an alphabet with kwargs[3]-1 letters
     letters = LetterAlphabet(collect(string.(['a':('a'+(kwargs[3]-1))]...)))
@@ -170,10 +197,6 @@ function driver(
     kms = [gen_kmodel(kwargs[2], rand(rng, 1:rand(rng, 1:kwargs[2])), rand(rng, 1:rand(rng, 1:kwargs[2])), P=letters, rng=rng) for _ in 1:kwargs[1]]
 
     # Start an experiment with kwargs[5] formulas, each with height kwargs[4], and repeat it kwargs[6] times
-    # NOTE: This code is repeated 2 times in order to be sure to get rid of compilation
-    # overhead which drastically affect the final experiment plot.
-    # Another solution has to be found as execution time is now doubled.
-    # times = mmcheck_experiment(kms, kwargs[5], kwargs[4], collect([0:kwargs[4]]...), P=letters, reps=kwargs[6], rng=rng, export_plot=false)
     times = mmcheck_experiment(
         kms,
         kwargs[5],
@@ -182,7 +205,7 @@ function driver(
         P=letters,
         reps=kwargs[6],
         experiment_parametrization=Tuple([kwargs..., Threads.nthreads()]),
-        rng=rng2,
+        rng=rng,
     )
 end
 
