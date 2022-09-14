@@ -18,11 +18,12 @@ function gen_formula(
     P::LetterAlphabet = SoleLogics.alphabet(MODAL_LOGIC),
     C::Operators = SoleLogics.operators(MODAL_LOGIC),
     max_modepth::Integer = height,
+    pruning_factor::Float64 = 0.0,
     normalization::Bool = true,
     rng::Union{Integer,AbstractRNG} = Random.GLOBAL_RNG
 )
     rng = (typeof(rng) <: Integer) ? Random.MersenneTwister(rng) : rng
-    fx = tree(_gen_formula(height, P, C, modal_depth=max_modepth, pruning_factor=0.1, rng=rng))
+    fx = tree(_gen_formula(height, P, C, modal_depth=max_modepth, pruning_factor=pruning_factor, rng=rng))
     if normalization
         fnormalize!(fx)
     end
@@ -34,11 +35,12 @@ function gen_formula(
     height::Integer,
     logic::AbstractLogic;
     max_modepth::Integer = height,
+    pruning_factor::Float64 = 0.0,
     normalization::Bool = true,
     rng::Union{Integer,AbstractRNG} = Random.GLOBAL_RNG
 )
     rng = (typeof(rng) <: Integer) ? Random.MersenneTwister(rng) : rng
-    fx = tree(_gen_formula(height, SoleLogics.alphabet(logic), SoleLogics.operators(logic), modal_depth=max_modepth, pruning_factor=0.1, rng=rng))
+    fx = tree(_gen_formula(height, SoleLogics.alphabet(logic), SoleLogics.operators(logic), modal_depth=max_modepth, pruning_factor=pruning_factor, rng=rng))
     if normalization
         fnormalize!(fx)
     end
@@ -208,7 +210,6 @@ function dispense_alphabet(
 ) where {T<:AbstractWorld}
     rng = (typeof(rng) <: Integer) ? Random.MersenneTwister(rng) : rng
     evals = Dict{T, LetterAlphabet}()
-    n = length(ws)
     for w in ws
         evals[w] = sample(P, rand(rng, 0:length(P)), replace=false)
     end

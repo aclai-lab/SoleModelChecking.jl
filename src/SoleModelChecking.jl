@@ -13,7 +13,7 @@ export tree, subformulas, fnormalize!
 
 # Model checker
 export Worlds, Adjacents
-export KripkeModel, worlds, adjacents, evaluations
+export KripkeModel, worlds, worlds!, adjacents, adjacents!, evaluations, evaluations!
 export memo, contains, push!
 export check
 
@@ -24,7 +24,7 @@ export _process_node
 # Generation
 export gen_formula
 export gnp, fanfan  # NOTE: this is for REPL test purpose and will be removed from here
-export gen_kmodel
+export gen_kmodel, dispense_alphabet
 
 @reexport using SoleLogics
 

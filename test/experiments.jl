@@ -1,5 +1,6 @@
 using SoleModelChecking
 using Test
+using ArgParse
 using Random
 using Missings
 using Plots
@@ -18,18 +19,6 @@ BenchmarkTools.DEFAULT_PARAMETERS.evals = 1
 #       Model Checking        #
 ###############################
 
-# The purpose of this function is to force julia to compile all the functions
-# involved in the process of testing mmcheck.
-# This is automatically invoked once before measuring times.
-function __force_compilation__(rng::AbstractRNG)
-    kms = [gen_kmodel(30, 5, 5, rng=rng) for _ in 1:30]
-    fnumbers = 100
-    fxs = [gen_formula(fheight, P=P, rng=rng) for _ in 1:fnumbers]
-    for i in 1:fnumbers
-        _mmcheck_experiment(kms, fxs[i], 10)
-    end
-end
-
 # A random generated formula is applied on multiple kripke models (_mmcheck_experiment).
 # This process is repeated `fnumbers` times, thus returning an array of times (Float64),
 # for each requested `memo_fheight`.
@@ -39,7 +28,8 @@ function mmcheck_experiment(
     fnumbers::Integer,
     fheight::Integer,
     fheight_memo::Vector{<:Number};
-    P = SoleLogics.alphabet(MODAL_LOGIC),
+    P::LetterAlphabet = SoleLogics.alphabet(MODAL_LOGIC),
+    pruning_factor::Float64 = 0.0,
     reps::Integer = 1,
     experiment_parametrization::Tuple = (fnumbers, fheight, fheight_memo, Threads.nthreads()),
     rng::Union{Integer,AbstractRNG} = 1337,
@@ -55,11 +45,11 @@ function mmcheck_experiment(
 
     # Dummy execution
     for _ in 1:(reps*0.1)
-        _mmcheck_experiment(𝑀, fnumbers, fheight, fheight_memo, rng=rng)
+        _mmcheck_experiment(𝑀, fnumbers, fheight, fheight_memo, pruning_factor=pruning_factor, rng=rng)
     end
     # Main computational cycle
-    for rep in 1:reps
-        times = times + _mmcheck_experiment(𝑀, fnumbers, fheight, fheight_memo, rng=rng)
+    for _ in 1:reps
+        times = times + _mmcheck_experiment(𝑀, fnumbers, fheight, fheight_memo, P=P, pruning_factor=pruning_factor, rng=rng)
     end
     # mean times
     times = times ./ reps
@@ -94,14 +84,23 @@ function _mmcheck_experiment(
     fnumbers::Integer,
     fheight::Integer,
     fheight_memo::Vector{<:Number};
-    P = SoleLogics.alphabet(MODAL_LOGIC),
-    rng::AbstractRNG
+    P::LetterAlphabet = SoleLogics.alphabet(MODAL_LOGIC),
+    pruning_factor::Float64 = 0.0,
+    rng::AbstractRNG = Random.GLOBAL_RNG
 ) where {T <: AbstractWorld}
     # time matrix is initialized
     times = fill(zero(Float64), length(fheight_memo), fnumbers)
 
     # array of formulas is generated
-    fxs = [gen_formula(fheight, P=P, rng=rng) for _ in 1:fnumbers]
+    fxs = [
+        gen_formula(
+            fheight,
+            P=P,
+            pruning_factor=pruning_factor,
+            rng=rng
+        )
+        for _ in 1:fnumbers
+    ]
 
     for m in eachindex(fheight_memo)
         # `fnumbers` model checkings are called, keeping memoization among calls
@@ -117,7 +116,7 @@ function _mmcheck_experiment(
         end
 
         # a complete level of memoization is now tested
-        times[m,:] = times[m,:] + current_times[:]
+        times[m,:] = current_times[:]
         # memoization is completely cleaned up; this way next iterations will not cheat
         for km in 𝑀
             empty!(memo(km))
@@ -127,25 +126,7 @@ function _mmcheck_experiment(
     return times
 end
 
-#=
-# Utility function to retrieve total time elapsed to compute multiple model checkings.
-# See mmcheck_experiment.
-function _mmcheck_experiment(
-    𝑀::Vector{KripkeModel{T}},
-    fx::SoleLogics.Formula,
-    memo_fheight::Integer;
-) where {T<:AbstractWorld}
-    elapsed = zero(Float64)
-    for km in 𝑀
-        elapsed = elapsed + _timed_check_experiment(km, fx, max_fheight_memo=memo_fheight)
-    end
-    return elapsed
-end
-=#
-
-# Timed model checking. Return a pair containing the elapsed time
-# and a boolean (representing if fx is valid on init_world).
-# The latter can be used to test check correctness.
+# Timed model checking.
 function _timed_check_experiment(
     km::KripkeModel,
     fx::SoleLogics.Formula;
@@ -181,32 +162,71 @@ function _timed_check_experiment(
     return t
 end
 
-# This needs
-# number of models, worlds in each model, alphabet cardinality, formula height, number of formulas, repetitions
-# e.g 10 20 2 3 1000 10
-# TODO: add ArgParser.jl
+# Experiments driver function
 function driver(
-    kwargs...;
+    args;
     rng::Union{Integer,AbstractRNG} = 1337
 )
     rng = (typeof(rng) <: Integer) ? Random.MersenneTwister(rng) : rng
 
-    # Create an alphabet with kwargs[3]-1 letters
-    letters = LetterAlphabet(collect(string.(['a':('a'+(kwargs[3]-1))]...)))
-    # Create kwargs[1] models. Each world in/out degree ranges from 1 to kwargs[2]
-    kms = [gen_kmodel(kwargs[2], rand(rng, 1:rand(rng, 1:kwargs[2])), rand(rng, 1:rand(rng, 1:kwargs[2])), P=letters, rng=rng) for _ in 1:kwargs[1]]
+    letters = LetterAlphabet(collect(string.(['a':('a'+(args["nletters"]-1))]...)))
 
-    # Start an experiment with kwargs[5] formulas, each with height kwargs[4], and repeat it kwargs[6] times
-    times = mmcheck_experiment(
+    # A "primer" Kripke Model is fixed, then models with different Valuations set are generated
+    primer = gen_kmodel(args["nworlds"], rand(rng, 1:rand(rng, 1:args["nworlds"])), rand(rng, 1:rand(rng, 1:args["nworlds"])), P=letters, rng=rng)
+    kms = [deepcopy(primer) for _ in 1:args["nmodels"]]
+    for km in kms
+        evaluations!(km, dispense_alphabet(worlds(km), P=letters, rng=rng))
+    end
+
+    if args["fmaxheight"] < 7
+        fheight_memo = collect([0:args["fmaxheight"]]...)
+    else
+        fheight_memo = [0,1,2,4,8]
+    end
+
+    mmcheck_experiment(
         kms,
-        kwargs[5],
-        kwargs[4],
-        collect([0:kwargs[4]]...),
+        args["nformulas"],
+        args["fmaxheight"],
+        fheight_memo,
         P=letters,
-        reps=kwargs[6],
-        experiment_parametrization=Tuple([kwargs..., Threads.nthreads()]),
+        pruning_factor=args["prfactor"],
+        reps=args["nreps"],
+        experiment_parametrization=Tuple([args["nmodels"], args["nworlds"], args["fmaxheight"], args["nformulas"], args["prfactor"], args["nreps"], Threads.nthreads()]),
         rng=rng,
     )
 end
 
-driver(parse.(Int64, ARGS)..., rng=1337)
+# ArgParse.jl
+function parse_commandline()
+    s = ArgParseSettings()
+
+    @add_arg_table s begin
+        "--nmodels"
+            help = "Number of kripke models"
+            arg_type = Int
+        "--nworlds"
+            help = "Number of worlds in each kripke model"
+            arg_type = Int
+        "--nletters"
+            help = "Alphabet cardinality"
+            arg_type = Int
+        "--fmaxheight"
+            help = "Formula max height"
+            arg_type = Int
+        "--nformulas"
+            help = "Number of formulas"
+            arg_type = Int
+        "--prfactor"
+            help = "Pruning factor to shorten generated formulas"
+            arg_type = Float64
+        "--nreps"
+            help = "Number of repetitions"
+            arg_type = Int
+    end
+
+    return parse_args(s)
+end
+
+# e.g julia --project=. test/experiments.jl --nmodels 10 --nworlds 20 --nletters 2 --fmaxheight 3 --nformulas 1000 --prfactor 0.5 --nreps 10
+driver(parse_commandline(), rng=1337)

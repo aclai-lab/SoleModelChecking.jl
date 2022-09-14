@@ -69,12 +69,15 @@ struct KripkeModel{T<:AbstractWorld}
     end
 end
 worlds(km::KripkeModel) = km.worlds
+worlds!(km::KripkeModel, ws::Worlds{T}) where {T<:AbstractWorld} = worlds(km) = ws
 
 adjacents(km::KripkeModel) = km.adjacents
 adjacents(km::KripkeModel, w::AbstractWorld) = km.adjacents[w]
+adjacents!(km::KripkeModel, adjs::Adjacents{T}) where {T<:AbstractWorld} = adjacents(km) = adjs
 
 evaluations(km::KripkeModel) = km.evaluations
 evaluations(km::KripkeModel, w::AbstractWorld) = km.evaluations[w]
+evaluations!(km::KripkeModel, evals::Dict{T, LetterAlphabet}) where {T<:AbstractWorld} = evaluations(km) = evals
 
 logic(km::KripkeModel) = km.logic
 
@@ -97,6 +100,7 @@ memo(km::KripkeModel, key::Formula) = memo(km, fhash(key.tree))
 # This setter is dangerous as it doesn't check if key exists in the memo structure
 # memo!(km::KripkeModel, key::Integer, val::MemoValueType) = km.L[key] = val # memo(km, key) = val
 
+# Check if memoization structure does contain a certain value, considering a certain key
 contains(km::KripkeModel, key, value::AbstractWorld) = begin
     (!haskey(memo(km), key) || !(value in memo(km, key))) ? false : true
 end
