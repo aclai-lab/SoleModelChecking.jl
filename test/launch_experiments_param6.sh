@@ -1,12 +1,12 @@
 #!/bin/bash
 #
 exec_repetitions=(10000)
-exec_pruning_factor=(0.1)
-exec_n_models=(50)
-exec_n_worlds_per_model=(25)
+exec_pruning_factor=(0.7)
+exec_n_models=(10)
+exec_n_worlds_per_model=(10)
 exec_n_letters=(2 8)
-exec_max_formula_height=(1 2 4 8)
-exec_n_formulas=(5000)
+exec_max_formula_height=(8)
+exec_n_formulas=(8000)
 exec_n_threads=(1)
 
 for repetitions in "${exec_repetitions[@]}"; do
