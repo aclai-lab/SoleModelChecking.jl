@@ -192,7 +192,7 @@ function driver(
         P=letters,
         pruning_factor=args["prfactor"],
         reps=args["nreps"],
-        experiment_parametrization=Tuple([args["nmodels"], args["nworlds"], args["fmaxheight"], args["nformulas"], args["prfactor"], args["nreps"], Threads.nthreads()]),
+        experiment_parametrization=Tuple([args["nmodels"], args["nworlds"], args["nletters"], args["fmaxheight"], args["nformulas"], args["prfactor"], args["nreps"], Threads.nthreads()]),
         rng=rng,
     )
 end
