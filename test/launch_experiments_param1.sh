@@ -1,10 +1,10 @@
 #!/bin/bash
 #
-exec_repetitions=(10000)
-exec_pruning_factor=(0.1 0.4 0.7)
+exec_repetitions=(1000)
+exec_pruning_factor=(0.2 0.5 0.8)
 exec_n_models=(10)
 exec_n_worlds_per_model=(10)
-exec_n_letters=(2 8)
+exec_n_letters=(2 4 8)
 exec_max_formula_height=(1)
 exec_n_formulas=(1000)
 exec_n_threads=(1)
