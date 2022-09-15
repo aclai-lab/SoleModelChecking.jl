@@ -179,7 +179,7 @@ function driver(
     end
 
     if args["fmaxheight"] < 7
-        fheight_memo = collect([0:args["fmaxheight"]]...)
+        fheight_memo = [-1, collect([0:args["fmaxheight"]]...)...]
     else
         fheight_memo = [0,1,2,4,8]
     end
