@@ -3,7 +3,7 @@ using Test
 using ArgParse
 using Random
 using Missings
-using Plots
+using Plots, Plots.Measures
 using CSV, Tables
 using CPUTime
 
@@ -64,14 +64,14 @@ function mmcheck_experiment(
         # number of formulas vs cumulative time
         plt1 = plot()
         for m in eachindex(fheight_memo)
-            plot!(plt1, 1:fnumbers, cumsum(times[m,:]), labels="memo: $(fheight_memo[m])", legend=:topleft)
+            plot!(plt1, 1:fnumbers, cumsum(times[m,:]), labels="memo: $(fheight_memo[m])", margins=10mm, legend=:topleft)
         end
         savefig(plt1, fpath*"simple-$(join(experiment_parametrization, "_")).png")
 
         # nth formula vs istantaneous time
         plt2 = plot()
         for m in eachindex(fheight_memo)
-            scatter!(plt2, 1:fnumbers, times[m,:], labels="memo: $(fheight_memo[m])", legend=:topleft, markersize=2, markerstrokewidth = 0)
+            scatter!(plt2, 1:fnumbers, times[m,:], labels="memo: $(fheight_memo[m])", margins=10mm, legend=:topleft, markersize=2, markerstrokewidth = 0)
         end
         savefig(plt2, fpath*"scatter-$(join(experiment_parametrization, "_")).png")
     end
@@ -137,7 +137,7 @@ function _timed_check_experiment(
 
     if !haskey(memo(km), fhash(fx.tree))
         for psi in subformulas(fx.tree)
-            if height(psi) > max_fheight_memo
+            if SoleLogics.height(psi) > max_fheight_memo
                 push!(forget_list, psi)
             end
             t = t + @CPUelapsed if !haskey(memo(km), fhash(psi)) _process_node(km, psi) end
