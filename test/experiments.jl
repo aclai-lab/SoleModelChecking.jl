@@ -181,7 +181,7 @@ function driver(
     if args["fmaxheight"] < 7
         fheight_memo = [-1, collect([0:args["fmaxheight"]]...)...]
     else
-        fheight_memo = [0,1,2,4,8]
+        fheight_memo = [-1,0,1,2,4,8]
     end
 
     mmcheck_experiment(
@@ -197,7 +197,6 @@ function driver(
     )
 end
 
-# ArgParse.jl
 function parse_commandline()
     s = ArgParseSettings()
 
