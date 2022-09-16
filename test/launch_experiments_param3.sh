@@ -5,7 +5,7 @@ exec_pruning_factor=(0.2 0.5 0.8)
 exec_n_models=(50)
 exec_n_worlds_per_model=(20)
 exec_n_letters=(8)
-exec_max_formula_height=(4)
+exec_max_formula_height=(8)
 exec_n_formulas=(4000)
 exec_n_threads=(1)
 
