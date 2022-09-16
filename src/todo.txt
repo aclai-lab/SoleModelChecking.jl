@@ -3,7 +3,7 @@
     ✓ Modal depth regulation
     ✓ Test (I would like to do more tests)
     ☐ Guarantee the same generation-probability foreach possible formula
-    ☐ Think about other parameters to tweak
+    ✓ Think about other parameters to tweak (pruning factor)
 
 ✓ Build an appropriate model generation system
 
@@ -20,7 +20,7 @@
         threads where at least one thread modifies the collection 
         (common examples include push! on arrays, or inserting items into a Dict)."
     ✓ Plots
-    ☐ Get rid of boring precompilation times as much as possible (https://julialang.org/blog/2021/01/precompile_tutorial/)
+    ✓ Get rid of boring precompilation times as much as possible (https://julialang.org/blog/2021/01/precompile_tutorial/)
 
 ✓ Find a way to memoize "a DISJUNCTION b" with the same hash as "b  DISJUNCTION a"; 
     (call a normalization function before model checking, using is_commutative trait)
@@ -39,12 +39,14 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Todos for the future:
 
+☐ Inject Logic in Node and Formula (SoleLogics)
+    ☐ Define a general Logic for manage dispatches where it's not specified 
 ☐ Write a Relations hierarchy (in SoleLogics) thus extending KripkeModel's `Adjacents`
-☐ Write some Letter struct and avoid working with plain strings (SoleAlphabet)
+✓ Write some Letter struct and avoid working with plain strings (SoleAlphabet)
 ☐ Refine code since now it only works with PointWorlds
 ☐ Look for more appropriate variable names
 ☐ Add types when a optional argument is given in a function
-☐ Force "test/plots" folder push to github, since this is randomly ignored also by manually adding it in a new commit.
+? Force "test/plots" folder push to github, since this is randomly ignored also by manually adding it in a new commit.
 ☐ Consider leaf nodes as sentinels when calling gen_formula
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
