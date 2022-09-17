@@ -1,7 +1,7 @@
 #!/bin/bash
 #
-exec_repetitions=(1000)
-exec_pruning_factor=(0.2 0.5 0.8)
+exec_repetitions=(100)
+exec_pruning_factor=(0.4 0.6 0.8)
 exec_n_models=(50)
 exec_n_worlds_per_model=(20)
 exec_n_letters=(16)

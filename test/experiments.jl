@@ -141,13 +141,6 @@ function _timed_check_experiment(
                 push!(forget_list, psi)
             end
             t = t + @CPUelapsed if !haskey(memo(km), fhash(psi)) _process_node(km, psi) end
-
-            #= This is the correct way to measure time without the giant
-            (98%) interference of compilation time. But it's too slow and
-            BenchmarkTools default "samples" and "evals" parameters must be set to 1.
-            if haskey(memo(km), fhash(psi)) continue end
-            t = t + @belapsed (_process_node($km, $psi))
-            =#
         end
     end
 
