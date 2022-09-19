@@ -3,6 +3,7 @@ using Plots, Plots.Measures
 using ArgParse
 using CSV
 using Tables
+using Statistics
 
 #=
 Plot attributes
@@ -31,20 +32,23 @@ function plot_mmcheck(args::Dict{String, Any})
 
     # Collections to make plot meaningfull
     theme(:vibrant)
-    lcolors = theme_palette(:vibrant)
-    lstyles = [:solid :dash :dot :dashdot :dashdotdot]
+    lcolors = deepcopy(theme_palette(:vibrant))
+    lstyles = [:solid :dash :dashdotdot :dot :dashdot]
+    lmarkers = [:circle, :circle, :circle, :utriangle, :dtriangle]
     memo_label = [split(args["memolabel"])...]
     prf_label = [split(args["prlabel"])...]
 
+    # Simple plot (different pruning factor in one)
     plt1 = plot()
     for i in eachindex(files)
-        theme(:vibrant)
         nrows, ncols = Base.size(files[i])
 
         for row in 1:nrows
-
             #NOTE: this will be removed, it's only purpose is to remove memo3 from plots
-            if nrows >= 6 && row == 5 continue end
+            if memo_label[row] == "SKIP"
+                lcolors[6] = lcolors[5]
+                continue
+            end
 
             plot!(
                 plt1,
@@ -54,37 +58,50 @@ function plot_mmcheck(args::Dict{String, Any})
                 title=args["title"],
                 legend=:topleft,
                 label="memo: $(memo_label[row]), pr: $(prf_label[i])",
-                margins=5mm
+                margins=5mm,
+                titlelocation=:left,
+                titlefontsize=11
             )
         end
     end
-    display(plt1)
-    savefig(plt1, joinpath(pwd(), "test", "plots", "$(fname).png"))
+    xlabel!(plt1, "Nth formula")
+    ylabel!(plt1, "Cumulative time [s]")
+    savefig(plt1, joinpath(pwd(), "test", "plots", "simple_$(fname).png"))
 
-    #=
-    linestyle=lstyles[i],
-    labels="$row",
-    legend=:topleft,
-    margins=15mm
-    =#
+    lcolors = deepcopy(theme_palette(:vibrant))
+    # Scatter plot (each plot has only one pruning factor)
+    for i in eachindex(files)
+        nrows, ncols = Base.size(files[i])
 
-#=
-    # Scatter plot
-    plt2 = plot()
-    for row in 1:nrows
-        scatter!(
-            plt2,
-            1:ncols,
-            times[row,:],
-            labels="$row",
-            linestyle=:solid,
-            margins=15mm,
-            markersize=2,
-            markerstrokewidth=0
-        )
+        plt2 = plot()
+        for row in 1:nrows
+            #NOTE: this will be removed, it's only purpose is to remove memo3 from plots
+            if memo_label[row] == "SKIP"
+                lcolors[6] = lcolors[5]
+                continue
+            end
+
+            ymax = mean(files[i][1,:]) + 0.0001 # Formula to remove outliners
+            scatter!(
+                plt2,
+                files[i][row,:],
+                markersize=3,
+                markerstrokewith=10,
+                markershape=lmarkers[i],
+                markercolor=lcolors[row],
+                title=args["title"],
+                legend=:topright,
+                label="memo: $(memo_label[row]), pr: $(prf_label[i])",
+                margins=5mm,
+                ylim=(0, ymax),
+                titlelocation=:left,
+                titlefontsize=11
+            )
+        end
+        xlabel!("Nth formula")
+        ylabel!("Instantaneous time [s]")
+        savefig(plt2, joinpath(pwd(), "test", "plots", "scatter_$(fname)_$(prf_label[i]).png"))
     end
-    display(plt2)
-    =#
 end
 
 function ArgParse.parse_item(::Type{Vector{String}}, x::AbstractString)
@@ -108,4 +125,58 @@ function parse_commandline()
     return parse_args(s)
 end
 
-plot_mmcheck(parse_commandline())
+# E.g usage from terminal (uncomment the following)
+# julia -i --project=. test/plotter.jl --directory=test/csv/simple_10_4_4 --title="#Models=10, #Letters=4, MaxHeight=4" --memolabel="no 0 1 2 4 8" --prlabel="0.2 0.5 0.8"
+# plot_mmcheck(parse_commandline())
+
+n_models = 10
+n_worlds = 10
+for n_letters in [2 4 8 16]
+    for fheight in [1 2 4]
+        arguments = Dict{String, Any}(
+            "directory" => joinpath("test", "csv", "$(n_models)_$(n_letters)_$(fheight)"),
+            "title" => "#Models=$(n_models), #Worlds=$(n_worlds), #Letters=$(n_letters), MaxHeight=$(fheight)",
+            "memolabel" => "no 0 1 2 SKIP 4",
+            "prlabel" => "0.2 0.5 0.8"
+        )
+        plot_mmcheck(arguments)
+    end
+end
+
+for n_letters in [2 4 8 16]
+    for fheight in [8]
+        arguments = Dict{String, Any}(
+            "directory" => joinpath("test", "csv", "$(n_models)_$(n_letters)_$(fheight)"),
+            "title" => "#Models=$(n_models), #Worlds=$(n_worlds), #Letters=$(n_letters), MaxHeight=$(fheight)",
+            "memolabel" => "no 0 1 2 4 8",
+            "prlabel" => "0.2 0.5 0.8"
+        )
+        plot_mmcheck(arguments)
+    end
+end
+
+n_models = 50
+n_worlds = 20
+for n_letters in [2 4 8 16]
+    for fheight in [1 2 4]
+        arguments = Dict{String, Any}(
+            "directory" => joinpath("test", "csv", "$(n_models)_$(n_letters)_$(fheight)"),
+            "title" => "#Models=$(n_models), #Worlds=$(n_worlds), #Letters=$(n_letters), MaxHeight=$(fheight)",
+            "memolabel" => "no 0 1 2 SKIP 4",
+            "prlabel" => "0.4 0.6 0.8"
+        )
+        plot_mmcheck(arguments)
+    end
+end
+
+for n_letters in [2 4 8 16]
+    for fheight in [8]
+        arguments = Dict{String, Any}(
+            "directory" => joinpath("test", "csv", "$(n_models)_$(n_letters)_$(fheight)"),
+            "title" => "#Models=$(n_models), #Worlds=$(n_worlds), #Letters=$(n_letters), MaxHeight=$(fheight)",
+            "memolabel" => "no 0 1 2 4 8",
+            "prlabel" => "0.4 0.6 0.8"
+        )
+        plot_mmcheck(arguments)
+    end
+end
