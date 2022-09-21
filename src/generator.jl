@@ -260,29 +260,3 @@ function gen_kmodel(n::Integer, P::LetterAlphabet, method::Symbol, kwargs...)
     evs = dispense_alphabet(ws, P=P)
     return KripkeModel{PointWorld}(ws, adjs, evs)
 end
-
-######################
-#        Plot        #
-#      Utilities     #
-######################
-
-#= Graph plotting
-using GraphRecipes
-using Plots
-
-const n = 15
-const A = Float64[ rand() < 0.5 ? 0 : 1 for i=1:n, j=1:n]
-for i=1:n
-    A[i, 1:i-1] = A[1:i-1, i]
-    A[i, i] = 0
-end
-
-graphplot(A,
-          markersize = 0.2,
-          node_weights = 1:n,
-          markercolor = range(colorant"yellow", stop=colorant"red", length=n),
-          names = 1:n,
-          fontsize = 10,
-          linecolor = :darkgrey
-          )
-=#

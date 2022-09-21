@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Utility script to execute "experiments.jl".
-# The .png plot and the .csv file associated with the specified parametrization 
-# are saved in test/plots and test/csv
+# The .png plot and the .csv file associated with the specified 
+# parametrization are saved in test/plots and test/csv
 
 exec_repetitions=(1000)
 exec_pruning_factor=(0.2 0.5 0.7)
