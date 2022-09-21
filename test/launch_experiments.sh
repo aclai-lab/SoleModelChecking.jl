@@ -1,12 +1,16 @@
 #!/bin/bash
-#
-exec_repetitions=(100)
+
+# Utility script to execute "experiments.jl".
+# The .png plot and the .csv file associated with the specified parametrization 
+# are saved in test/plots and test/csv
+
+exec_repetitions=(1000)
 exec_pruning_factor=(0.2 0.5 0.7)
 exec_n_models=(50)
 exec_n_worlds_per_model=(20)
-exec_n_letters=(2)
-exec_max_formula_height=(4)
-exec_n_formulas=(4000)
+exec_n_letters=(16)
+exec_max_formula_height=(2)
+exec_n_formulas=(2000)
 exec_n_threads=(1)
 
 for repetitions in "${exec_repetitions[@]}"; do

@@ -4,6 +4,7 @@ using ArgParse
 using CSV
 using Tables
 using Statistics
+using PGFPlotsX
 
 #=
 Plot attributes
@@ -22,7 +23,6 @@ function plot_mmcheck(args::Dict{String, Any})
         if check_extension(file) != ".csv"
             continue
         end
-
         filepath = joinpath(pwd(), args["directory"], file)
         push!(files, CSV.read(filepath, Tables.matrix, header=0))
     end
@@ -55,7 +55,7 @@ function plot_mmcheck(args::Dict{String, Any})
                 cumsum(files[i][row,:]),
                 linestyle=lstyles[i],
                 linecolor=lcolors[row],
-                title=args["title"],
+                # title=args["title"],
                 legend=:topleft,
                 label="memo: $(memo_label[row]), pr: $(prf_label[i])",
                 margins=5mm,
@@ -64,7 +64,7 @@ function plot_mmcheck(args::Dict{String, Any})
             )
         end
     end
-    xlabel!(plt1, "Nth formula")
+    xlabel!(plt1, "Number of formulas")
     ylabel!(plt1, "Cumulative time [s]")
     savefig(plt1, joinpath(pwd(), "test", "plots", "simple_$(fname).png"))
 
@@ -86,10 +86,10 @@ function plot_mmcheck(args::Dict{String, Any})
                 plt2,
                 files[i][row,:],
                 markersize=3,
-                markerstrokewith=10,
+                markerstrokewidth=0,
                 markershape=lmarkers[i],
                 markercolor=lcolors[row],
-                title=args["title"],
+                # title=args["title"],
                 legend=:topright,
                 label="memo: $(memo_label[row]), pr: $(prf_label[i])",
                 margins=5mm,
@@ -98,9 +98,102 @@ function plot_mmcheck(args::Dict{String, Any})
                 titlefontsize=11
             )
         end
-        xlabel!("Nth formula")
+        xlabel!("Number of formulas")
         ylabel!("Instantaneous time [s]")
         savefig(plt2, joinpath(pwd(), "test", "plots", "scatter_$(fname)_$(prf_label[i]).png"))
+    end
+end
+
+# Similar to plot_mmcheck, but exports to .tex
+function plot_mmcheck_latex(args::Dict{String, Any})
+    files = []
+    for file in readdir(args["directory"])
+        if check_extension(file) != ".csv"
+            continue
+        end
+        filepath = joinpath(pwd(), args["directory"], file)
+        push!(files, CSV.read(filepath, Tables.matrix, header=0))
+    end
+
+    # Exported plot name
+    fname = split(args["directory"], Base.Filesystem.path_separator)[end]
+
+    # Collections to make plot meaningfull
+    theme(:vibrant)
+    lcolors = deepcopy(theme_palette(:vibrant))
+    lstyles = [:solid :dash :dashdotdot :dot :dashdot]
+    lmarkers = [:circle, :circle, :circle, :utriangle, :dtriangle]
+    memo_label = [split(args["memolabel"])...]
+    prf_label = [split(args["prlabel"])...]
+
+    # Plots backend
+    pgfplotsx()
+
+    # Simple plot (different pruning factor in one)
+    plt1 = plot()
+    for i in eachindex(files)
+        nrows, ncols = Base.size(files[i])
+
+        for row in 1:nrows
+            #NOTE: this will be removed, it's only purpose is to remove memo3 from plots
+            if memo_label[row] == "SKIP"
+                lcolors[6] = lcolors[5]
+                continue
+            end
+
+            plot!(
+                plt1,
+                cumsum(files[i][row,:]),
+                linestyle=lstyles[i],
+                linecolor=lcolors[row],
+                # title=args["title"],
+                legend=:topleft,
+                label="memo: $(memo_label[row]), pr: $(prf_label[i])",
+                margins=5mm,
+                titlelocation=:left,
+                titlefontsize=11
+            )
+        end
+    end
+    xlabel!(plt1, "Number of formulas")
+    ylabel!(plt1, "Cumulative time [s]")
+    # savefig(plt1, joinpath(pwd(), "test", "plots", "simple_$(fname).png"))
+    savefig(plt1, joinpath(pwd(), "test", "latex_plots", "simple_$(fname).tex"))
+
+    lcolors = deepcopy(theme_palette(:vibrant))
+    # Scatter plot (each plot has only one pruning factor)
+    for i in eachindex(files)
+        nrows, ncols = Base.size(files[i])
+
+        plt2 = plot()
+        for row in 1:nrows
+            #NOTE: this will be removed, it's only purpose is to remove memo3 from plots
+            if memo_label[row] == "SKIP"
+                lcolors[6] = lcolors[5]
+                continue
+            end
+
+            ymax = mean(files[i][1,:]) + 0.0001 # Formula to remove outliners
+            scatter!(
+                plt2,
+                files[i][row,:],
+                markersize=3,
+                markerstrokewidth=0,
+                markershape=lmarkers[i],
+                markercolor=lcolors[row],
+                # title=args["title"],
+                legend=:topright,
+                label="memo: $(memo_label[row]), pr: $(prf_label[i])",
+                margins=5mm,
+                ylim=(0, ymax),
+                titlelocation=:left,
+                titlefontsize=11
+            )
+        end
+        xlabel!("Number of formulas")
+        ylabel!("Instantaneous time [s]")
+        # savefig(plt2, joinpath(pwd(), "test", "plots", "scatter_$(fname)_$(prf_label[i]).png"))
+        savefig(plt2, joinpath(pwd(), "test", "latex_plots", "scatter_$(fname)_$(prf_label[i]).tex"))
     end
 end
 
