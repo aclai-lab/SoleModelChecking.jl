@@ -91,14 +91,9 @@ function _mmcheck_experiment(
     # time matrix is initialized
     times = fill(zero(Float64), length(fheight_memo), fnumbers)
 
-    # array of formulas is generated
+    # an array of formulas is generated
     fxs = [
-        gen_formula(
-            fheight,
-            P=P,
-            pruning_factor=pruning_factor,
-            rng=rng
-        )
+        fnormalize!(gen_formula(fheight, P=P, pruning_factor=pruning_factor, rng=rng))
         for _ in 1:fnumbers
     ]
 

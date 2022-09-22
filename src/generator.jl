@@ -19,15 +19,10 @@ function gen_formula(
     C::Operators = SoleLogics.operators(MODAL_LOGIC),
     max_modepth::Integer = height,
     pruning_factor::Float64 = 0.0,
-    normalization::Bool = true,
     rng::Union{Integer,AbstractRNG} = Random.GLOBAL_RNG
 )
     rng = (typeof(rng) <: Integer) ? Random.MersenneTwister(rng) : rng
     fx = tree(_gen_formula(height, P, C, modal_depth=max_modepth, pruning_factor=pruning_factor, rng=rng))
-    if normalization
-        fnormalize!(fx)
-    end
-
     return fx
 end
 
@@ -36,15 +31,10 @@ function gen_formula(
     logic::AbstractLogic;
     max_modepth::Integer = height,
     pruning_factor::Float64 = 0.0,
-    normalization::Bool = true,
     rng::Union{Integer,AbstractRNG} = Random.GLOBAL_RNG
 )
     rng = (typeof(rng) <: Integer) ? Random.MersenneTwister(rng) : rng
     fx = tree(_gen_formula(height, SoleLogics.alphabet(logic), SoleLogics.operators(logic), modal_depth=max_modepth, pruning_factor=pruning_factor, rng=rng))
-    if normalization
-        fnormalize!(fx)
-    end
-
     return fx
 end
 
@@ -63,18 +53,25 @@ function _gen_formula(
 
     # A random valid operator is chosen
     if modal_depth == 0
-        #= TODO: this part is broken and the momentary placeholder is ugly
-        @assert length(C[!is_modal_operator.(C)]) >= 0
-        op = rand(C[!is_modal_operator.(C)])
-        =#
         op = rand(rng, filter(x -> !is_modal_operator(x), C))
     else
         op = rand(rng, C)
     end
 
-    # Operator C refers to a number of subformulas equals to its ariety
-    f = vcat(map(_ -> _gen_formula(height-1, P, C, modal_depth = modal_depth - is_modal_operator(op), pruning_factor=pruning_factor, rng=rng), 1:ariety(op))...)
-    f = convert(Vector{Union{String, AbstractOperator}}, f)
+    # Operator C refers to a number of subformulas equal to its ariety
+    f = vcat(
+            map(_ -> _gen_formula(
+                    height-1,
+                    P,
+                    C,
+                    modal_depth = modal_depth - is_modal_operator(op),
+                    pruning_factor = pruning_factor,
+                    rng=rng
+                ),
+                1:ariety(op)
+            )...
+        )
+    f = convert(Vector{Union{Letter, AbstractOperator}}, f)
     push!(f, op)
 
     return f

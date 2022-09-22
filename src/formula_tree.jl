@@ -38,6 +38,9 @@ end
 # Dispatch to directly create a formula tree from a non-preprocessed string
 tree(expression::String) = tree(shunting_yard(expression))
 
+# TODO: when a node will be internally associated with a Logic
+# modify this function in order to create leaf nodes "without repetitions"
+# thus not wasting memory
 function _tree(tok, nodestack)
     newnode = Node(tok)
     # 1
