@@ -3,7 +3,7 @@ using Test
 using Random
 
 function run_tests(list)
-    println("\n" * ("#" ^ 50))
+    println("\n" * ("#"^50))
     for test in list
         println("TEST: $test")
         include(test)
@@ -13,15 +13,7 @@ end
 println("Julia version: ", VERSION)
 
 test_suites = [
-    ("Formulas", [
-        "formulas/generation.jl",
-        "formulas/input.jl",
-        "formulas/normalization.jl"
-    ]),
-    ("Models", [
-        "models/generation.jl",
-        "models/model_checking.jl"
-    ]),
+    ("Models", ["models/generation.jl", "models/model_checking.jl"]),
 ]
 
 @testset "Test Suites" begin

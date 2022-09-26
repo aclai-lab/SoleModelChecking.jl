@@ -12,7 +12,7 @@
     #                  (4) ───────────┘
     #                  p,s
 
-    worlds = Worlds([PointWorld(i) for i in 1:5])
+    worlds = Worlds([PointWorld(i) for i = 1:5])
 
     adjs = Adjacents{PointWorld}()
     setindex!(adjs, Worlds([worlds[2], worlds[5]]), worlds[1])
@@ -21,12 +21,12 @@
     setindex!(adjs, Worlds([worlds[2], worlds[3]]), worlds[4])
     setindex!(adjs, Worlds{PointWorld}([]), worlds[5])
 
-    evaluations = Dict{PointWorld, Vector{String}}()
-    setindex!(evaluations, ["p","q"] , worlds[1])
-    setindex!(evaluations, ["p","q","r"] , worlds[2])
-    setindex!(evaluations, ["s"] , worlds[3])
-    setindex!(evaluations, ["p","s"] , worlds[4])
-    setindex!(evaluations, ["p","q","r"] , worlds[5])
+    evaluations = Dict{PointWorld,Vector{String}}()
+    setindex!(evaluations, ["p", "q"], worlds[1])
+    setindex!(evaluations, ["p", "q", "r"], worlds[2])
+    setindex!(evaluations, ["s"], worlds[3])
+    setindex!(evaluations, ["p", "s"], worlds[4])
+    setindex!(evaluations, ["p", "q", "r"], worlds[5])
 
     formula = tree(shunting_yard("◊(¬(s)∧(r))"))
     km = KripkeModel{PointWorld}(worlds, adjs, evaluations)
@@ -55,7 +55,7 @@
     #   (1) <────────> (2) ────────> (4)
     #   q,r                           s
 
-    worlds = Worlds([PointWorld(i) for i in 1:4])
+    worlds = Worlds([PointWorld(i) for i = 1:4])
 
     adjs = Adjacents{PointWorld}()
     setindex!(adjs, worlds[2], worlds[1])
@@ -63,11 +63,11 @@
     setindex!(adjs, worlds[2], worlds[3])
     setindex!(adjs, Worlds{PointWorld}([]), worlds[4])
 
-    evaluations = Dict{PointWorld, Vector{String}}()
-    setindex!(evaluations, ["q","r"] , worlds[1])
-    setindex!(evaluations, ["s"] , worlds[2])
-    setindex!(evaluations, ["p"] , worlds[3])
-    setindex!(evaluations, ["s"] , worlds[4])
+    evaluations = Dict{PointWorld,Vector{String}}()
+    setindex!(evaluations, ["q", "r"], worlds[1])
+    setindex!(evaluations, ["s"], worlds[2])
+    setindex!(evaluations, ["p"], worlds[3])
+    setindex!(evaluations, ["s"], worlds[4])
 
     formula = tree(shunting_yard("□(p ∨ (¬(◊r)))"))
     km = KripkeModel{PointWorld}(worlds, adjs, evaluations)
@@ -91,13 +91,16 @@ end
 
 @testset "Multiple models, multiple formulas model, model checking" begin
 
-    for i in 2:10
-        kms = [gen_kmodel(i, rand(1:rand(1:i)), rand(1:rand(1:i))) for _ in 1:i]
+    for i = 2:10
+        kms = [gen_kmodel(i, rand(1:rand(1:i)), rand(1:rand(1:i))) for _ = 1:i]
         fdim = rand(2:i)
-        fxs = [gen_formula(fdim) for _ in 1:i]
+        fxs = [gen_formula(fdim) for _ = 1:i]
 
-        outcomes = [check(kms, fxs, PointWorld(1), max_fheight_memo=max_memo) for max_memo in 1:fdim]
-        @test all(y->y==outcomes[1], outcomes)
+        outcomes = [
+            check(kms, fxs, PointWorld(1), max_fheight_memo = max_memo) for
+            max_memo = 1:fdim
+        ]
+        @test all(y -> y == outcomes[1], outcomes)
     end
 
 end

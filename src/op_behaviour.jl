@@ -12,32 +12,36 @@ SoleLogics.NEGATION(universe::Worlds{T}, ws::Set{T}) where {T<:AbstractWorld} = 
     return setdiff(Set(universe), ws)
 end
 
-SoleLogics.CONJUNCTION(a::Bool, b::Bool) = (a&&b)
-SoleLogics.CONJUNCTION(a::Worlds{T}, b::Worlds{T}) where {T<:AbstractWorld} = Worlds{T}(intersect(a,b))
-SoleLogics.CONJUNCTION(a::Set{T}, b::Set{T}) where {T<:AbstractWorld} = intersect(a,b)
+SoleLogics.CONJUNCTION(a::Bool, b::Bool) = (a && b)
+SoleLogics.CONJUNCTION(a::Worlds{T}, b::Worlds{T}) where {T<:AbstractWorld} =
+    Worlds{T}(intersect(a, b))
+SoleLogics.CONJUNCTION(a::Set{T}, b::Set{T}) where {T<:AbstractWorld} = intersect(a, b)
 
-SoleLogics.DISJUNCTION(a::Bool, b::Bool) = (a||b)
-SoleLogics.DISJUNCTION(a::Worlds{T}, b::Worlds{T}) where {T<:AbstractWorld} = Worlds{T}(union(a,b))
-SoleLogics.DISJUNCTION(a::Set{T}, b::Set{T}) where {T<:AbstractWorld} = union(a,b)
+SoleLogics.DISJUNCTION(a::Bool, b::Bool) = (a || b)
+SoleLogics.DISJUNCTION(a::Worlds{T}, b::Worlds{T}) where {T<:AbstractWorld} =
+    Worlds{T}(union(a, b))
+SoleLogics.DISJUNCTION(a::Set{T}, b::Set{T}) where {T<:AbstractWorld} = union(a, b)
 
 SoleLogics.IMPLICATION(a::Bool, b::Bool) = ifelse(a == true && b == false, false, true)
-SoleLogics.IMPLICATION(universe::Worlds{T}, a::Worlds{T}, b::Worlds{T}) where {T<:AbstractWorld} = begin
-    return Worlds{T}(setdiff(universe, setdiff(a, CONJUNCTION(a,b))))
+SoleLogics.IMPLICATION(
+    universe::Worlds{T},
+    a::Worlds{T},
+    b::Worlds{T},
+) where {T<:AbstractWorld} = begin
+    return Worlds{T}(setdiff(universe, setdiff(a, CONJUNCTION(a, b))))
 end
-SoleLogics.IMPLICATION(universe::Worlds{T}, a::Set{T}, b::Set{T}) where {T<:AbstractWorld} = begin
-    return setdiff(Set(universe), setdiff(a, CONJUNCTION(a,b)))
-end
+SoleLogics.IMPLICATION(universe::Worlds{T}, a::Set{T}, b::Set{T}) where {T<:AbstractWorld} =
+    begin
+        return setdiff(Set(universe), setdiff(a, CONJUNCTION(a, b)))
+    end
 
 # use traits here (is_abstract_modop, is_existential_modop)
 function dispatch_modop(
     token::T,
     km::KripkeModel{WT},
     w::WT,
-    φ::UInt64
-) where {
-    T<:AbstractModalOperator,
-    WT<:AbstractWorld
-}
+    φ::UInt64,
+) where {T<:AbstractModalOperator,WT<:AbstractWorld}
     # Consider v as some neighbor of our w
     # In the existential case, if some km,v ⊨ φ (possibly one v) then return true
     # In the universal case, if all km,v ⊨ φ then return true
@@ -64,7 +68,7 @@ function dispatch_modop(
     for neighbor in adjacents(km, w)
         s = op(s, contains(km, φ, neighbor))
         if s == !start_cond
-            break;
+            break
         end
     end
 

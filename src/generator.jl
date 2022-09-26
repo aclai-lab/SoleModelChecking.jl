@@ -1,83 +1,4 @@
 ######################
-#      Formulas      #
-#     generation     #
-######################
-
-# Simple toy generator for a formula-tree
-# given expected depth, a set of propositional letters and a set of operators.
-#
-# Currently, I modified the first algorithm in https://arxiv.org/pdf/2110.09228.pdf
-# to match postfix notation.
-#
-# P = SoleLogics.alphabet(MODAL_LOGIC)
-# C = SoleLogics.operators(MODAL_LOGIC)
-# gen_formula(2, P, C) -> tree(["q", "s", AND, DIAMOND]) -> ◊(q ∧ s)
-
-function gen_formula(
-    height::Integer;
-    P::LetterAlphabet = SoleLogics.alphabet(MODAL_LOGIC),
-    C::Operators = SoleLogics.operators(MODAL_LOGIC),
-    max_modepth::Integer = height,
-    pruning_factor::Float64 = 0.0,
-    rng::Union{Integer,AbstractRNG} = Random.GLOBAL_RNG
-)
-    rng = (typeof(rng) <: Integer) ? Random.MersenneTwister(rng) : rng
-    fx = tree(_gen_formula(height, P, C, modal_depth=max_modepth, pruning_factor=pruning_factor, rng=rng))
-    return fx
-end
-
-function gen_formula(
-    height::Integer,
-    logic::AbstractLogic;
-    max_modepth::Integer = height,
-    pruning_factor::Float64 = 0.0,
-    rng::Union{Integer,AbstractRNG} = Random.GLOBAL_RNG
-)
-    rng = (typeof(rng) <: Integer) ? Random.MersenneTwister(rng) : rng
-    fx = tree(_gen_formula(height, SoleLogics.alphabet(logic), SoleLogics.operators(logic), modal_depth=max_modepth, pruning_factor=pruning_factor, rng=rng))
-    return fx
-end
-
-function _gen_formula(
-    height::Integer,
-    P::LetterAlphabet,
-    C::Operators;
-    modal_depth::Integer,
-    pruning_factor::Float64 = 0.0,
-    rng::AbstractRNG = Random.GLOBAL_RNG
-)
-    # Propositional letters are always leaf
-    if height==0 || rand(rng) < pruning_factor
-        return [rand(rng, P)]
-    end
-
-    # A random valid operator is chosen
-    if modal_depth == 0
-        op = rand(rng, filter(x -> !is_modal_operator(x), C))
-    else
-        op = rand(rng, C)
-    end
-
-    # Operator C refers to a number of subformulas equal to its ariety
-    f = vcat(
-            map(_ -> _gen_formula(
-                    height-1,
-                    P,
-                    C,
-                    modal_depth = modal_depth - is_modal_operator(op),
-                    pruning_factor = pruning_factor,
-                    rng=rng
-                ),
-                1:ariety(op)
-            )...
-        )
-    f = convert(Vector{Union{Letter, AbstractOperator}}, f)
-    push!(f, op)
-
-    return f
-end
-
-######################
 #       Models       #
 #     generation     #
 ######################
@@ -88,17 +9,17 @@ end
 # Create a graph as an adjacency matrix by randomling
 # sampling (probability p) the edges between n nodes.
 # Convert the same graph to an adjacency list and return it.
-function gnp(n::Integer, p::Float64; rng::Union{Integer,AbstractRNG} =Random.GLOBAL_RNG)
+function gnp(n::Integer, p::Float64; rng::Union{Integer,AbstractRNG} = Random.GLOBAL_RNG)
     M = _gnp(n, p, rng)
 
-    worlds = Worlds([PointWorld(i) for i in 1:n])
+    worlds = Worlds([PointWorld(i) for i = 1:n])
     adjs = Adjacents{PointWorld}()
 
     # Left triangular matrix is used to generate an adjacency list
-    for i in 1:n
+    for i = 1:n
         neighbors = Worlds{PointWorld}([])
-        for j in 1:i
-            if M[i,j] == 1
+        for j = 1:i
+            if M[i, j] == 1
                 push!(neighbors.worlds, worlds[j])
             end
         end
@@ -111,9 +32,9 @@ end
 function _gnp(n::Integer, p::Real, rng::AbstractRNG)
     M = zeros(Int8, n, n)
 
-    for i in 1:n, j in 1:i
+    for i = 1:n, j = 1:i
         if rand(rng) < p
-            M[i,j] = 1
+            M[i, j] = 1
         end
     end
 
@@ -131,14 +52,14 @@ function fanfan(
     n::Integer,
     id::Integer,
     od::Integer;
-    threshold::Float64=0.5,
-    rng::Union{Integer,AbstractRNG}=Random.GLOBAL_RNG
+    threshold::Float64 = 0.5,
+    rng::Union{Integer,AbstractRNG} = Random.GLOBAL_RNG,
 )
     rng = (typeof(rng) <: Integer) ? Random.MersenneTwister(rng) : rng
     adjs = Adjacents{PointWorld}()
     setindex!(adjs, Worlds{PointWorld}([]), PointWorld(0))  # Ecco qua ad esempio metti un GenericWorld
 
-    od_queue = PriorityQueue{PointWorld, Int64}(PointWorld(0) => 0)
+    od_queue = PriorityQueue{PointWorld,Int64}(PointWorld(0) => 0)
 
     while length(adjs.adjacents) <= n
         if rand(rng) <= threshold
@@ -153,16 +74,16 @@ end
 
 function _fanout(
     adjs::Adjacents{PointWorld},
-    od_queue::PriorityQueue{PointWorld, Int},
+    od_queue::PriorityQueue{PointWorld,Int},
     od::Integer,
-    rng::AbstractRNG
+    rng::AbstractRNG,
 )
     #=
     Find the vertex v with the biggest difference between its out-degree and od.
     Create a random number of vertices between 1 and (od-m)
     and add edges from v to these new vertices.
     =#
-    v,m = peek(od_queue)
+    v, m = peek(od_queue)
 
     for i in rand(rng, 1:(od-m))
         new_node = PointWorld(length(adjs))
@@ -176,18 +97,18 @@ end
 
 function _fanin(
     adjs::Adjacents{PointWorld},
-    od_queue::PriorityQueue{PointWorld, Int},
+    od_queue::PriorityQueue{PointWorld,Int},
     id::Integer,
     od::Integer,
-    rng::AbstractRNG
+    rng::AbstractRNG,
 )
     #=
     Find the set S of all vertices that have out-degree < od.
     Compute a subset T of S of size at most id.
     Add a new vertex v and add new edges (v, t) for all t ∈ T
     =#
-    S = filter(x -> x[2]<od, od_queue)
-    T = Set(sample(collect(S), rand(rng, 1:min(id, length(S))), replace=false))
+    S = filter(x -> x[2] < od, od_queue)
+    T = Set(sample(collect(S), rand(rng, 1:min(id, length(S))), replace = false))
 
     v = PointWorld(length(adjs))
     for t in T
@@ -203,12 +124,12 @@ end
 function dispense_alphabet(
     ws::Worlds{T};
     P::LetterAlphabet = SoleLogics.alphabet(MODAL_LOGIC),
-    rng::Union{Integer,AbstractRNG} = Random.GLOBAL_RNG
+    rng::Union{Integer,AbstractRNG} = Random.GLOBAL_RNG,
 ) where {T<:AbstractWorld}
     rng = (typeof(rng) <: Integer) ? Random.MersenneTwister(rng) : rng
-    evals = Dict{T, LetterAlphabet}()
+    evals = Dict{T,LetterAlphabet}()
     for w in ws
-        evals[w] = sample(P, rand(rng, 0:length(P)), replace=false)
+        evals[w] = sample(P, rand(rng, 0:length(P)), replace = false)
     end
     return evals
 end
@@ -224,12 +145,12 @@ function gen_kmodel(
     out_degree::Integer;  # needed by fanfan
     P::LetterAlphabet = SoleLogics.alphabet(MODAL_LOGIC),
     threshold = 0.5,      # needed by fanfan
-    rng::Union{Integer,AbstractRNG} = Random.GLOBAL_RNG
+    rng::Union{Integer,AbstractRNG} = Random.GLOBAL_RNG,
 )
     rng = (typeof(rng) <: Integer) ? Random.MersenneTwister(rng) : rng
     ws = Worlds{PointWorld}(world_gen(n))
-    adjs = fanfan(n, in_degree, out_degree, threshold=threshold, rng=rng)
-    evs = dispense_alphabet(ws, P=P, rng=rng)
+    adjs = fanfan(n, in_degree, out_degree, threshold = threshold, rng = rng)
+    evs = dispense_alphabet(ws, P = P, rng = rng)
     return KripkeModel{PointWorld}(ws, adjs, evs)
 end
 
@@ -254,6 +175,6 @@ function gen_kmodel(n::Integer, P::LetterAlphabet, method::Symbol, kwargs...)
 
     ws = Worlds{PointWorld}(world_gen(n))
     adjs = fx(n, kwargs...)
-    evs = dispense_alphabet(ws, P=P)
+    evs = dispense_alphabet(ws, P = P)
     return KripkeModel{PointWorld}(ws, adjs, evs)
 end

@@ -5,12 +5,6 @@ using StatsBase
 using Random
 using Reexport
 
-# using GraphPlot
-
-# Formula tree
-export shunting_yard
-export tree, subformulas, fnormalize!
-
 # Model checker
 export Worlds, Adjacents
 export KripkeModel, worlds, worlds!, adjacents, adjacents!, evaluations, evaluations!
@@ -22,14 +16,11 @@ export check
 export _process_node
 
 # Generation
-export gen_formula
 export gnp, fanfan  # NOTE: this is for REPL test purpose and will be removed from here
 export gen_kmodel, dispense_alphabet
 
 @reexport using SoleLogics
 
-include("parser.jl")
-include("formula_tree.jl")
 include("checker.jl")
 include("op_behaviour.jl")
 

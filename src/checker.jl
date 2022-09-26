@@ -4,29 +4,34 @@
 #################################
 
 # Adjacents is the simplest type of relation-collection
-struct Adjacents{T<:AbstractWorld} <: AbstractDict{T, Worlds}
-    adjacents::Dict{T, Worlds{T}}
+struct Adjacents{T<:AbstractWorld} <: AbstractDict{T,Worlds}
+    adjacents::Dict{T,Worlds{T}}
 
     function Adjacents{T}() where {T<:AbstractWorld}
-        return new{T}(Dict{T, Worlds{T}}());
+        return new{T}(Dict{T,Worlds{T}}())
     end
 
-    function Adjacents{T}(adjacents::Dict{T, Worlds{T}}) where {T<:AbstractWorld}
-        return new{T}(adjacents);
+    function Adjacents{T}(adjacents::Dict{T,Worlds{T}}) where {T<:AbstractWorld}
+        return new{T}(adjacents)
     end
 end
-Base.iterate(adj::Adjacents, state=1) = state < length(adj.adjacents) ? Base.iterate(adj, state+1) : nothing
+Base.iterate(adj::Adjacents, state = 1) =
+    state < length(adj.adjacents) ? Base.iterate(adj, state + 1) : nothing
 Base.keys(adj::Adjacents) = keys(adj.adjacents)
 Base.values(adj::Adjacents) = values(adj.adjacents)
 Base.length(adj::Adjacents) = length(adj.adjacents)
 
 Base.isassigned(adj::Adjacents, w::AbstractWorld) = (w in adj.adjacents)
 Base.getindex(adj::Adjacents, key::AbstractWorld) = adj.adjacents[key]
-Base.setindex!(adj::Adjacents, value::Worlds, key::AbstractWorld) = adj.adjacents[key] = value
-Base.setindex!(adj::Adjacents, value::AbstractWorld, key::AbstractWorld) = adj.adjacents[key] = Worlds([value])
+Base.setindex!(adj::Adjacents, value::Worlds, key::AbstractWorld) =
+    adj.adjacents[key] = value
+Base.setindex!(adj::Adjacents, value::AbstractWorld, key::AbstractWorld) =
+    adj.adjacents[key] = Worlds([value])
 
-Base.push!(adj::Adjacents, key::AbstractWorld, value::AbstractWorld) = push!(adj.adjacents[key].worlds, value)
-Base.push!(adj::Adjacents, key::AbstractWorld, value::Worlds) = push!(adj.adjacents[key].worlds, value...)
+Base.push!(adj::Adjacents, key::AbstractWorld, value::AbstractWorld) =
+    push!(adj.adjacents[key].worlds, value)
+Base.push!(adj::Adjacents, key::AbstractWorld, value::Worlds) =
+    push!(adj.adjacents[key].worlds, value...)
 
 Base.print(io::IO, adj::Adjacents) = print(adj.adjacents)
 Base.show(io::IO, adj::Adjacents) = show(adj.adjacents)
@@ -38,21 +43,21 @@ Base.show(io::IO, adj::Adjacents) = show(adj.adjacents)
 # This flexibility could be further extended
 const WorldsSet{T<:AbstractWorld} = Set{T}  # Write this in SoleWorlds, near Worlds wrapper
 const MemoValueType{T} = WorldsSet{T}
-const Memo{T} = Dict{UInt64, MemoValueType{T}}
+const Memo{T} = Dict{UInt64,MemoValueType{T}}
 # const MemoValue{T} = Worlds{T}            <- a possible working alternative
 # const Memo{T} = Dict{Integer, Worlds{T}}  <-
 
 struct KripkeModel{T<:AbstractWorld}
     worlds::Worlds{T}                    # worlds in the model
     adjacents::Adjacents{T}              # neighbors of a given world
-    evaluations::Dict{T, LetterAlphabet} # list of prop. letters satisfied by a world
+    evaluations::Dict{T,LetterAlphabet} # list of prop. letters satisfied by a world
     logic::AbstractLogic                 # logic associated with this model
     L::Memo{T}                           # memoization collection associated with this model
 
     function KripkeModel{T}() where {T<:AbstractWorld}
         worlds = Worlds{T}([])
-        adjacents = Dict{T, Worlds{T}}([])
-        evaluations = Dict{T, Vector{String}}()
+        adjacents = Dict{T,Worlds{T}}([])
+        evaluations = Dict{T,Vector{String}}()
         logic = SoleLogics.MODAL_LOGIC
         L = Memo{T}()
         return new{T}(worlds, adjacents, evaluations, L, logic)
@@ -61,7 +66,7 @@ struct KripkeModel{T<:AbstractWorld}
     function KripkeModel{T}(
         worlds::Worlds{T},
         adjacents::Adjacents{T},
-        evaluations::Dict{T, Vector{String}}
+        evaluations::Dict{T,Vector{String}},
     ) where {T<:AbstractWorld}
         logic = SoleLogics.MODAL_LOGIC
         L = Memo{T}()
@@ -73,11 +78,13 @@ worlds!(km::KripkeModel, ws::Worlds{T}) where {T<:AbstractWorld} = worlds(km) = 
 
 adjacents(km::KripkeModel) = km.adjacents
 adjacents(km::KripkeModel, w::AbstractWorld) = km.adjacents[w]
-adjacents!(km::KripkeModel, adjs::Adjacents{T}) where {T<:AbstractWorld} = adjacents(km) = adjs
+adjacents!(km::KripkeModel, adjs::Adjacents{T}) where {T<:AbstractWorld} =
+    adjacents(km) = adjs
 
 evaluations(km::KripkeModel) = km.evaluations
 evaluations(km::KripkeModel, w::AbstractWorld) = km.evaluations[w]
-evaluations!(km::KripkeModel, evals::Dict{T, LetterAlphabet}) where {T<:AbstractWorld} = evaluations(km) = evals
+evaluations!(km::KripkeModel, evals::Dict{T,LetterAlphabet}) where {T<:AbstractWorld} =
+    evaluations(km) = evals
 
 logic(km::KripkeModel) = km.logic
 
@@ -126,10 +133,10 @@ function _check_alphabet(km::KripkeModel, ψ::Node)
         # memo
         if w in memo(km, key)
             continue
-        # new entry
-        elseif token(ψ) in evaluations(km,w)
+            # new entry
+        elseif token(ψ) in evaluations(km, w)
             push!(km, key, w)
-        # no world
+            # no world
         elseif !haskey(memo(km), key)
             setindex!(memo(km), MemoValueType{eltype(km)}([]), key)
         end
@@ -180,7 +187,11 @@ function _check_binary(km::KripkeModel, ψ::Node)
     # Implication case is ad-hoc as it needs to know the
     # universe were the two operands are placed
     if typeof(token(ψ)) == SoleLogics.BinaryOperator{:→}
-        setindex!(memo(km), IMPLICATION(worlds(km), memo(km, left_key), memo(km, right_key)), key)
+        setindex!(
+            memo(km),
+            IMPLICATION(worlds(km), memo(km, left_key), memo(km, right_key)),
+            key,
+        )
     else
         setindex!(memo(km), token(ψ)(memo(km, left_key), memo(km, right_key)), key)
     end
@@ -196,7 +207,7 @@ function _process_node(km::KripkeModel, ψ::Node)
     end
 end
 
-function check(km::KripkeModel, fx::SoleLogics.Formula; max_fheight_memo=Inf)
+function check(km::KripkeModel, fx::SoleLogics.Formula; max_fheight_memo = Inf)
     forget_list = Vector{SoleLogics.Node}()
 
     if !haskey(memo(km), fhash(fx.tree))
@@ -217,9 +228,9 @@ function check(km::KripkeModel, fx::SoleLogics.Formula; max_fheight_memo=Inf)
     fcollection = deepcopy(memo(km))
     for h in forget_list
         k = fhash(h)
-        if haskey(memo(km),k)
+        if haskey(memo(km), k)
             empty!(memo(km, k)) # Collection at memo(km)[k] is erased
-            pop!(memo(km),k)    # Key k is deallocated too
+            pop!(memo(km), k)    # Key k is deallocated too
         end
     end
 
@@ -229,11 +240,11 @@ end
 function check(
     𝑀::Vector{KripkeModel{T}},
     Φ::Vector{SoleLogics.Formula};
-    max_fheight_memo = Inf
+    max_fheight_memo = Inf,
 ) where {T<:AbstractWorld}
     for km in 𝑀
         for φ in Φ
-            check(km, φ, max_fheight_memo=max_fheight_memo)
+            check(km, φ, max_fheight_memo = max_fheight_memo)
         end
     end
 end
@@ -245,13 +256,17 @@ function check(
     𝑀::Vector{KripkeModel{T}},
     Φ::Vector{SoleLogics.Formula},
     iw::T;
-    max_fheight_memo = Inf
+    max_fheight_memo = Inf,
 ) where {T<:AbstractWorld}
     outcomes = Matrix{Bool}(undef, length(𝑀), length(Φ))
 
     for 𝑚 in eachindex(𝑀)
         for φ in eachindex(Φ)
-            outcomes[𝑚,φ] = (iw in check(𝑀[𝑚], Φ[φ], max_fheight_memo=max_fheight_memo)[fhash(Φ[φ].tree)])
+            outcomes[𝑚, φ] = (
+                iw in check(𝑀[𝑚], Φ[φ], max_fheight_memo = max_fheight_memo)[fhash(
+                    Φ[φ].tree,
+                )]
+            )
         end
     end
 
