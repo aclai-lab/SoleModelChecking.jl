@@ -124,7 +124,7 @@ end
 #################################
 #         Model Checking        #
 #################################
-function _check_alphabet(km::KripkeModel, ψ::Node)
+function _check_alphabet(km::KripkeModel, ψ::FNode)
     # As well as _check_unary and _check_binary, this could be done
     # @assert token(ψ) in SoleLogics.alphabet(logic(km)) "$(token(ψ)) is an invalid letter"
     key = fhash(ψ)
@@ -143,7 +143,7 @@ function _check_alphabet(km::KripkeModel, ψ::Node)
     end
 end
 
-function _check_unary(km::KripkeModel, ψ::Node)
+function _check_unary(km::KripkeModel, ψ::FNode)
     @assert token(ψ) in SoleLogics.operators(logic(km)) "Error - $(token(ψ)) is an invalid token"
     key = fhash(ψ)
 
@@ -172,7 +172,7 @@ function _check_unary(km::KripkeModel, ψ::Node)
     end
 end
 
-function _check_binary(km::KripkeModel, ψ::Node)
+function _check_binary(km::KripkeModel, ψ::FNode)
     @assert token(ψ) in SoleLogics.operators(logic(km)) "Error - $(token(ψ)) is an invalid token"
     key = fhash(ψ)
 
@@ -197,7 +197,7 @@ function _check_binary(km::KripkeModel, ψ::Node)
     end
 end
 
-function _process_node(km::KripkeModel, ψ::Node)
+function _process_node(km::KripkeModel, ψ::FNode)
     if is_proposition(token(ψ))
         _check_alphabet(km, ψ)
     elseif is_unary_operator(token(ψ))
@@ -207,8 +207,12 @@ function _process_node(km::KripkeModel, ψ::Node)
     end
 end
 
-function check(km::KripkeModel, fx::SoleLogics.Formula; max_fheight_memo = Inf)
-    forget_list = Vector{SoleLogics.Node}()
+function check(
+    km::KripkeModel{T},
+    fx::SoleLogics.Formula{L};
+    max_fheight_memo = Inf
+) where {T<:AbstractWorld, L<:AbstractLogic}
+    forget_list = Vector{SoleLogics.FNode}()
 
     if !haskey(memo(km), fhash(fx.tree))
         for ψ in subformulas(fx.tree)
@@ -239,9 +243,9 @@ end
 
 function check(
     𝑀::Vector{KripkeModel{T}},
-    Φ::Vector{SoleLogics.Formula};
+    Φ::Vector{SoleLogics.Formula{L}};
     max_fheight_memo = Inf,
-) where {T<:AbstractWorld}
+) where {T<:AbstractWorld, L<:AbstractLogic}
     for km in 𝑀
         for φ in Φ
             check(km, φ, max_fheight_memo = max_fheight_memo)
@@ -254,10 +258,10 @@ end
 # considering a certain max-memoization threshold.
 function check(
     𝑀::Vector{KripkeModel{T}},
-    Φ::Vector{SoleLogics.Formula},
+    Φ::Vector{SoleLogics.Formula{L}},
     iw::T;
     max_fheight_memo = Inf,
-) where {T<:AbstractWorld}
+) where {T<:AbstractWorld, L<:AbstractLogic}
     outcomes = Matrix{Bool}(undef, length(𝑀), length(Φ))
 
     for 𝑚 in eachindex(𝑀)

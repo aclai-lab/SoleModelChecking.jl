@@ -28,11 +28,11 @@
     setindex!(evaluations, ["p", "s"], worlds[4])
     setindex!(evaluations, ["p", "q", "r"], worlds[5])
 
-    formula = tree(shunting_yard("◊(¬(s)∧(r))"))
+    formula = build_tree(shunting_yard("◊(¬(s)∧(r))"))
     km = KripkeModel{PointWorld}(worlds, adjs, evaluations)
 
     L = check(km, formula)
-    subf = subformulas(formula.tree)
+    subf = subformulas(tree(formula))
     s = fhash(subf[1])
     @test memo(km, s) == Set{PointWorld}([worlds[3], worlds[4]])
     r = fhash(subf[2])
@@ -69,11 +69,11 @@
     setindex!(evaluations, ["p"], worlds[3])
     setindex!(evaluations, ["s"], worlds[4])
 
-    formula = tree(shunting_yard("□(p ∨ (¬(◊r)))"))
+    formula = build_tree(shunting_yard("□(p ∨ (¬(◊r)))"))
     km = KripkeModel{PointWorld}(worlds, adjs, evaluations)
 
     L = check(km, formula)
-    subf = subformulas(formula.tree)
+    subf = subformulas(tree(formula))
 
     p = fhash(subf[1])
     @test memo(km, p) == Set{PointWorld}([worlds[3]])
