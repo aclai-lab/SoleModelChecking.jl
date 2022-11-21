@@ -1,9 +1,3 @@
-# NOTE: token type could be directly added to node
-# in order to avoid writing typeof(token(node))
-
-# TODO: Define WorldsSet{T} where T is forced to be <:AbstractWorld
-# and then remove the where clauses here
-
 SoleLogics.NEGATION(a::Bool) = (!a)
 SoleLogics.NEGATION(universe::Worlds{T}, ws::Worlds{T}) where {T<:AbstractWorld} = begin
     return Worlds{T}(setdiff(universe, ws))
@@ -35,7 +29,6 @@ SoleLogics.IMPLICATION(universe::Worlds{T}, a::Set{T}, b::Set{T}) where {T<:Abst
         return setdiff(Set(universe), setdiff(a, CONJUNCTION(a, b)))
     end
 
-# use traits here (is_abstract_modop, is_existential_modop)
 function dispatch_modop(
     token::T,
     km::KripkeModel{WT},
@@ -61,9 +54,6 @@ function dispatch_modop(
     start_cond = is_universal_modal_operator(token)
     op = is_universal_modal_operator(token) ? CONJUNCTION : DISJUNCTION
 
-    # TODO: test if a solutions which uses set operations is faster here
-    # intuitively this should be good in fact, by iterating neighbors one by one,
-    # sometime short-circuit happens
     s = start_cond
     for neighbor in adjacents(km, w)
         s = op(s, contains(km, φ, neighbor))

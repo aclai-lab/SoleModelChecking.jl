@@ -35,13 +35,8 @@ Base.push!(adj::Adjacents, key::AbstractWorld, value::Worlds) =
 
 Base.print(io::IO, adj::Adjacents) = print(adj.adjacents)
 Base.show(io::IO, adj::Adjacents) = show(adj.adjacents)
+const WorldsSet{T<:AbstractWorld} = Set{T}
 
-# TODO: may be useful to define a common interface for different/"similar" Memo types
-#
-# e.g at the moment memoization value-type can be switched between Set and Vector as
-# `contains`, `push!` and all the operators custom dispatching does support those types.
-# This flexibility could be further extended
-const WorldsSet{T<:AbstractWorld} = Set{T}  # Write this in SoleWorlds, near Worlds wrapper
 const MemoValueType{T} = WorldsSet{T}
 const Memo{T} = Dict{UInt64,MemoValueType{T}}
 # const MemoValue{T} = Worlds{T}            <- a possible working alternative
@@ -50,7 +45,7 @@ const Memo{T} = Dict{UInt64,MemoValueType{T}}
 struct KripkeModel{T<:AbstractWorld}
     worlds::Worlds{T}                    # worlds in the model
     adjacents::Adjacents{T}              # neighbors of a given world
-    evaluations::Dict{T,LetterAlphabet} # list of prop. letters satisfied by a world
+    evaluations::Dict{T,LetterAlphabet}  # list of prop. letters satisfied by a world
     logic::AbstractLogic                 # logic associated with this model
     L::Memo{T}                           # memoization collection associated with this model
 
@@ -104,9 +99,6 @@ memo(km::KripkeModel, key) = begin
 end
 memo(km::KripkeModel, key::Formula) = memo(km, fhash(key.tree))
 
-# This setter is dangerous as it doesn't check if key exists in the memo structure
-# memo!(km::KripkeModel, key::Integer, val::MemoValueType) = km.L[key] = val # memo(km, key) = val
-
 # Check if memoization structure does contain a certain value, considering a certain key
 contains(km::KripkeModel, key, value::AbstractWorld) = begin
     (!haskey(memo(km), key) || !(value in memo(km, key))) ? false : true
@@ -158,7 +150,6 @@ function _check_unary(km::KripkeModel, ψ::FNode)
 
     # Ad-hoc negation case
     if typeof(token(ψ)) == SoleLogics.UnaryOperator{:¬}
-        # NOTE: why is casting to MemoValueType needed here?
         setindex!(memo(km), NEGATION(worlds(km), memo(km, right_key)), key)
     elseif is_modal_operator(token(ψ))
         for w in worlds(km)
